@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    :root { --fg: #6366f1; --fg-back: rgba(99, 102, 241, 0.3); }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #818cf8; --fg-back: rgba(129, 140, 248, 0.35); }
+    }
+  </style>
+  <!-- Inter Black "A" as outlined path, back copy -->
+  <g transform="translate(-1, -2)" fill="var(--fg-back)">
+    <path d="M7.2 26L13.6 4.8h4.8L24.8 26h-4.4l-1.6-5.6h-5.6L11.6 26H7.2Zm5.2-9h5.2L15 8.4h-.1L12.4 17Z"/>
+  </g>
+  <!-- Inter Black "A" as outlined path, front copy -->
+  <g transform="translate(5, 4)" fill="var(--fg)">
+    <path d="M7.2 26L13.6 4.8h4.8L24.8 26h-4.4l-1.6-5.6h-5.6L11.6 26H7.2Zm5.2-9h5.2L15 8.4h-.1L12.4 17Z"/>
+  </g>
+</svg>

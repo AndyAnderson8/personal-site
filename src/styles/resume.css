@@ -1,0 +1,209 @@
+.resume-paper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-10) var(--space-12);
+  box-shadow: var(--shadow-card);
+  font-family: 'Georgia', serif;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  max-width: 880px;
+  width: 100%;
+  position: relative;
+}
+
+/* Resume header */
+.resume-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.01em;
+}
+
+.resume-contact {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.resume-contact-sep {
+  color: var(--color-text-muted);
+}
+
+/* Section */
+.resume-section {
+  margin-top: var(--space-6);
+}
+
+.resume-section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1.5px solid var(--color-text);
+  padding-bottom: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+/* Hoverable block */
+.resume-block {
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin: 0 calc(-1 * var(--space-3));
+  cursor: default;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+  border: 1.5px solid transparent;
+  position: relative;
+}
+
+.resume-block:hover,
+.resume-block.active {
+  background-color: var(--color-highlight);
+  border-color: var(--color-highlight-border);
+}
+
+
+.resume-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.resume-block-title {
+  font-weight: 700;
+  font-size: var(--font-size-base);
+}
+
+.resume-block-date {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.resume-block-subtitle {
+  font-style: italic;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+/* Bullet list (renamed from resume-block-bullets) */
+.resume-bullets {
+  padding-left: var(--space-5);
+  list-style: disc;
+}
+
+.resume-bullets li {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  list-style: disc;
+}
+
+.resume-skills-label {
+  font-weight: 700;
+}
+
+/* Detail card (shown beside resume on hover) */
+.detail-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  box-shadow: var(--shadow-lg);
+  width: 360px;
+  flex-shrink: 0;
+  transition: opacity var(--transition-base), transform var(--transition-base);
+}
+
+.detail-card-title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  margin-bottom: var(--space-1);
+}
+
+.detail-card-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.detail-card-body {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-4);
+}
+
+.detail-card-image-wrap {
+  margin-bottom: var(--space-4);
+}
+
+.detail-card-image {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.detail-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.detail-card-tag {
+  background: var(--color-highlight);
+  border: 1px solid var(--color-highlight-border);
+  color: var(--color-accent);
+  border-radius: var(--radius-full);
+  padding: 2px var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.detail-card-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.detail-card-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.detail-card-link:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.detail-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 120px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--space-8);
+}
