@@ -1,125 +1,244 @@
 <script setup lang="ts">
-import ThemeToggle from './components/ThemeToggle.vue'
-import LandingPage from './components/LandingPage.vue'
+import { defineAsyncComponent, ref } from 'vue'
+import BusinessCard from './components/BusinessCard.vue'
+
+const resumeOpen = ref(false)
+const resumeMounted = ref(false)
+const AmbientScene = defineAsyncComponent(() => import('./components/AmbientScene.vue'))
+const ResumeModal = defineAsyncComponent(() => import('./components/ResumeModal.vue'))
+
+function openResume() {
+  resumeMounted.value = true
+  resumeOpen.value = true
+}
 </script>
 
 <template>
-  <div class="app-shell">
-    <header class="app-header">
-      <div class="app-header-inner">
-        <a href="#" class="app-logo" aria-label="Andy Anderson">
-          <svg class="app-logo-mark" aria-hidden="true" viewBox="0 0 32 36" xmlns="http://www.w3.org/2000/svg">
-            <text class="logo-a logo-a--back" x="0" y="26" fill="currentColor"
-              font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-              font-weight="900" font-size="34" letter-spacing="-3">A</text>
-            <text class="logo-a logo-a--front" x="7" y="33" fill="currentColor"
-              font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-              font-weight="900" font-size="34" letter-spacing="-3">A</text>
+  <div class="site-shell">
+    <AmbientScene />
+
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="#" aria-label="Andy Anderson, home">
+          <svg class="brand-mark" viewBox="0 0 42 42" aria-hidden="true">
+            <path class="brand-mark-outline" d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z" />
+            <path class="brand-mark-solid" d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z" />
           </svg>
-          <span class="app-logo-text">
-            <span class="app-logo-first">andy</span>
-            <span class="app-logo-sep">/</span>
-            <span class="app-logo-last">anderson</span>
-          </span>
+          <span class="brand-name">andy<span>/</span>anderson</span>
         </a>
-        <ThemeToggle />
+
+        <div class="header-status">
+          <span class="status-dot" aria-hidden="true"></span>
+          Phoenix, Arizona
+        </div>
       </div>
     </header>
-    <LandingPage />
+
+    <main class="card-stage">
+      <BusinessCard @open-resume="openResume" />
+
+      <button class="mobile-resume" type="button" @click="openResume">
+        View résumé
+      </button>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <span>© {{ new Date().getFullYear() }} Andy Anderson</span>
+        <span>Built with Vue + Three.js</span>
+      </div>
+    </footer>
+
+    <ResumeModal v-if="resumeMounted" :open="resumeOpen" @close="resumeOpen = false" />
   </div>
 </template>
 
 <style scoped>
-.app-shell {
-  --app-header-height: 4.5rem;
-  display: flex;
-  flex-direction: column;
+.site-shell {
+  --content-gutter: clamp(1.25rem, 4vw, 4.5rem);
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  color: #f7f4ee;
+  isolation: isolate;
 }
 
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
-  backdrop-filter: blur(8px);
-  transition: background-color var(--transition-base), border-color var(--transition-base);
+.site-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 20;
+  height: 5.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(6, 13, 24, 0.52), rgba(6, 13, 24, 0));
 }
 
-.app-header-inner {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: var(--space-3) var(--space-6);
+.site-header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--content-gutter);
 }
 
-.app-logo {
-  display: flex;
+.brand {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 0.65rem;
+  color: #fff;
   text-decoration: none;
-  color: var(--color-text);
 }
 
-/* --- Geometric mark: two overlapping A letterforms --- */
-.app-logo-mark {
-  width: 2rem;
-  height: 2.25rem;
-  flex-shrink: 0;
-  color: var(--color-accent);
+.brand-mark {
+  width: 2.15rem;
+  height: 2.15rem;
   overflow: visible;
 }
 
-.logo-a {
-  transition: transform var(--transition-base), opacity var(--transition-base);
-  transform-origin: center center;
+.brand-mark path {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 260ms ease;
 }
 
-.logo-a--back {
-  opacity: 0.3;
+.brand-mark-outline {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.62);
+  stroke-width: 1.2;
+  opacity: 0.78;
 }
 
-.logo-a--front {
+.brand-mark-solid {
+  fill: #dfb26a;
+  opacity: 0.92;
+  transform: translate(6px, 6px);
+}
+
+.brand:hover .brand-mark-outline {
   opacity: 1;
+  transform: translate(-2.5px, -2.5px) rotate(-1deg);
 }
 
-/* Hover: the two A's separate along the diagonal */
-.app-logo:hover .logo-a--back {
-  transform: translate(-2px, -2px);
-  opacity: 0.5;
+.brand:hover .brand-mark-solid {
+  opacity: 1;
+  transform: translate(8.5px, 8.5px) rotate(1deg);
 }
 
-.app-logo:hover .logo-a--front {
-  transform: translate(2px, 2px);
-}
-
-/* --- Name text treatment --- */
-.app-logo-text {
-  display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
+.brand-name {
   font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+  font-size: 0.78rem;
+  font-weight: 650;
   letter-spacing: -0.02em;
-  user-select: none;
 }
 
-.app-logo-first {
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.app-logo-sep {
-  color: var(--color-accent);
+.brand-name span {
+  padding: 0 0.2rem;
+  color: #dfb26a;
   font-weight: 400;
-  opacity: 0.6;
-  margin: 0 0.05rem;
 }
 
-.app-logo-last {
-  font-weight: 400;
-  color: var(--color-text-secondary);
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: #e8b86d;
+  box-shadow: 0 0 0.8rem rgba(232, 184, 109, 0.8);
+  animation: breathe 2.8s ease-in-out infinite;
+}
+
+.card-stage {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 8rem 2rem 6rem;
+  perspective: 1500px;
+}
+
+.mobile-resume {
+  display: none;
+}
+
+.site-footer {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 10;
+  color: rgba(255, 255, 255, 0.48);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+}
+
+.site-footer-inner {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 1.5rem var(--content-gutter);
+}
+
+@keyframes breathe {
+  50% { opacity: 0.45; transform: scale(0.75); }
+}
+
+@media (max-width: 700px) {
+  .site-header {
+    height: 4.75rem;
+  }
+
+  .header-status {
+    display: none;
+  }
+
+  .card-stage {
+    padding: 8.5rem 1rem 5rem;
+    align-content: center;
+  }
+
+  .mobile-resume {
+    position: absolute;
+    bottom: 4.7rem;
+    display: block;
+    padding: 0.65rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    background: rgba(9, 17, 28, 0.38);
+    color: white;
+    backdrop-filter: blur(12px);
+    font-size: 0.73rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot {
+    animation: none;
+  }
+
+  .brand-mark path {
+    transition: opacity 120ms ease;
+  }
+
+  .brand:hover .brand-mark-outline {
+    transform: none;
+  }
+
+  .brand:hover .brand-mark-solid {
+    transform: translate(6px, 6px);
+  }
 }
 </style>
