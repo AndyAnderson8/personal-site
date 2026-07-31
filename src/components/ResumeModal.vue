@@ -280,24 +280,50 @@ onBeforeUnmount(() => {
 
             <div class="viewer-actions">
               <button type="button" title="Download PDF" @click="downloadPdf">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v10l3.5-3.5 1.4 1.4-5.9 5.9-5.9-5.9 1.4-1.4L11 13V3ZM5 19h14v2H5v-2Z"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M11 3h2v10l3.5-3.5 1.4 1.4-5.9 5.9-5.9-5.9 1.4-1.4L11 13V3ZM5 19h14v2H5v-2Z"
+                  />
+                </svg>
                 <span>Download</span>
               </button>
               <button type="button" title="Print résumé" @click="printPdf">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v5H6V3Zm-2 6h16a2 2 0 0 1 2 2v7h-4v3H6v-3H2v-7a2 2 0 0 1 2-2Zm4 7v3h8v-5H8v2Zm11-4.5a1 1 0 1 0-2 0 1 1 0 0 0 2 0Z"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M6 3h12v5H6V3Zm-2 6h16a2 2 0 0 1 2 2v7h-4v3H6v-3H2v-7a2 2 0 0 1 2-2Zm4 7v3h8v-5H8v2Zm11-4.5a1 1 0 1 0-2 0 1 1 0 0 0 2 0Z"
+                  />
+                </svg>
                 <span>Print</span>
               </button>
               <button class="close-button" type="button" title="Close" @click="closeModal">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"
+                  />
+                </svg>
               </button>
             </div>
           </header>
 
           <div class="viewer-toolbar">
             <div class="pager">
-              <button type="button" :disabled="pageNumber <= 1" aria-label="Previous page" @click="changePage(-1)">←</button>
+              <button
+                type="button"
+                :disabled="pageNumber <= 1"
+                aria-label="Previous page"
+                @click="changePage(-1)"
+              >
+                ←
+              </button>
               <span>Page {{ pageNumber }} / {{ pageCount || '—' }}</span>
-              <button type="button" :disabled="pageNumber >= pageCount" aria-label="Next page" @click="changePage(1)">→</button>
+              <button
+                type="button"
+                :disabled="pageNumber >= pageCount"
+                aria-label="Next page"
+                @click="changePage(1)"
+              >
+                →
+              </button>
             </div>
             <div class="zoom">
               <button type="button" aria-label="Zoom out" @click="changeZoom(-0.1)">−</button>
@@ -466,9 +492,7 @@ onBeforeUnmount(() => {
 .canvas-wrap {
   overflow: auto;
   padding: 1rem;
-  background:
-    radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.06), transparent 45%),
-    #252c32;
+  background: radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.06), transparent 45%), #252c32;
   scrollbar-color: #59616a #252c32;
 }
 
@@ -524,10 +548,7 @@ onBeforeUnmount(() => {
 .text-layer :deep(.markedContent span:not(.markedContent)) {
   z-index: 1;
   font-size: calc(var(--text-scale-factor) * var(--font-height));
-  transform:
-    rotate(var(--rotate, 0deg))
-    scaleX(var(--scale-x, 1))
-    scale(var(--min-font-size-inv));
+  transform: rotate(var(--rotate, 0deg)) scaleX(var(--scale-x, 1)) scale(var(--min-font-size-inv));
 }
 
 .text-layer :deep(.markedContent) {
@@ -586,7 +607,9 @@ onBeforeUnmount(() => {
 
 .modal-enter-active .modal-backdrop,
 .modal-leave-active .modal-backdrop {
-  transition: opacity 360ms ease, backdrop-filter 420ms ease;
+  transition:
+    opacity 360ms ease,
+    backdrop-filter 420ms ease;
 }
 
 .modal-enter-active .resume-window {
@@ -604,11 +627,15 @@ onBeforeUnmount(() => {
 }
 
 .modal-enter-active .canvas-wrap {
-  transition: opacity 420ms 80ms ease, transform 520ms 70ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 420ms 80ms ease,
+    transform 520ms 70ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-leave-active .canvas-wrap {
-  transition: opacity 180ms ease, transform 240ms ease;
+  transition:
+    opacity 180ms ease,
+    transform 240ms ease;
 }
 
 .modal-enter-from,
@@ -641,7 +668,11 @@ onBeforeUnmount(() => {
   transform: translateY(0.45rem);
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 @media (max-width: 620px) {
   .resume-modal {

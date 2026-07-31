@@ -152,7 +152,12 @@ onMounted(() => {
 
 .ambient-vignette {
   background:
-    radial-gradient(circle at 50% 48%, transparent 15%, rgba(2, 8, 15, 0.16) 58%, rgba(2, 7, 13, 0.67) 110%),
+    radial-gradient(
+      circle at 50% 48%,
+      transparent 15%,
+      rgba(2, 8, 15, 0.16) 58%,
+      rgba(2, 7, 13, 0.67) 110%
+    ),
     linear-gradient(180deg, rgba(1, 8, 18, 0.3), transparent 37%, rgba(2, 8, 14, 0.25));
 }
 
@@ -169,8 +174,12 @@ onMounted(() => {
 }
 
 @keyframes landscape-drift {
-  from { transform: scale(1.01) translate3d(-0.35%, 0, 0); }
-  to { transform: scale(1.045) translate3d(0.35%, -0.2%, 0); }
+  from {
+    transform: scale(1.01) translate3d(-0.35%, 0, 0);
+  }
+  to {
+    transform: scale(1.045) translate3d(0.35%, -0.2%, 0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

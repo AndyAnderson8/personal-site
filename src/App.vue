@@ -21,8 +21,14 @@ function openResume() {
       <div class="site-header-inner">
         <a class="brand" href="#" aria-label="Andy Anderson, home">
           <svg class="brand-mark" viewBox="0 0 42 42" aria-hidden="true">
-            <path class="brand-mark-outline" d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z" />
-            <path class="brand-mark-solid" d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z" />
+            <path
+              class="brand-mark-outline"
+              d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z"
+            />
+            <path
+              class="brand-mark-solid"
+              d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z"
+            />
           </svg>
           <span class="brand-name">andy<span>/</span>anderson</span>
         </a>
@@ -36,10 +42,6 @@ function openResume() {
 
     <main class="card-stage">
       <BusinessCard @open-resume="openResume" />
-
-      <button class="mobile-resume" type="button" @click="openResume">
-        View résumé
-      </button>
     </main>
 
     <footer class="site-footer">
@@ -171,10 +173,6 @@ function openResume() {
   perspective: 1500px;
 }
 
-.mobile-resume {
-  display: none;
-}
-
 .site-footer {
   position: fixed;
   inset: auto 0 0;
@@ -193,7 +191,10 @@ function openResume() {
 }
 
 @keyframes breathe {
-  50% { opacity: 0.45; transform: scale(0.75); }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.75);
+  }
 }
 
 @media (max-width: 700px) {
@@ -208,19 +209,6 @@ function openResume() {
   .card-stage {
     padding: 8.5rem 1rem 5rem;
     align-content: center;
-  }
-
-  .mobile-resume {
-    position: absolute;
-    bottom: 4.7rem;
-    display: block;
-    padding: 0.65rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 999px;
-    background: rgba(9, 17, 28, 0.38);
-    color: white;
-    backdrop-filter: blur(12px);
-    font-size: 0.73rem;
   }
 }
 
