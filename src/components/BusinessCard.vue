@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
               </svg>
               GitHub
             </a>
-            <a href="mailto:andy@andylabs.org">
+            <a href="mailto:hello@andyanderson.dev">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L19.2 7H4.8l7.2 5.2Zm0 2.4L4 8.8V17h16V8.8l-8 5.8Z"
@@ -317,15 +317,15 @@ onBeforeUnmount(() => {
           <div class="back-grid">
             <div class="back-mark">AA<span>.</span></div>
             <div class="back-content">
-              <p class="kicker">Enterprise AI · Platforms · Applied ML</p>
+              <p class="kicker">Enterprise AI · Platform Engineering</p>
               <p class="back-summary">
-                I build secure, production AI systems—from Microsoft 365 MCP integrations and
-                RAG-powered knowledge retrieval to enterprise AI gateways, data platforms, and
-                developer tooling.
+                I turn enterprise AI ideas into secure, scalable production systems, spanning model
+                orchestration, intelligent applications, and the APIs and data pipelines that power
+                them.
               </p>
               <div class="back-meta">
-                <span>Python · Java · .NET · TypeScript</span>
-                <span>andy@andylabs.org</span>
+                <span>Python · TypeScript · C#/.NET</span>
+                <span>hello@andyanderson.dev</span>
               </div>
             </div>
           </div>
