@@ -36,10 +36,6 @@ function openResume() {
 
     <main class="card-stage">
       <BusinessCard @open-resume="openResume" />
-
-      <button class="mobile-resume" type="button" @click="openResume">
-        View résumé
-      </button>
     </main>
 
     <footer class="site-footer">
@@ -171,10 +167,6 @@ function openResume() {
   perspective: 1500px;
 }
 
-.mobile-resume {
-  display: none;
-}
-
 .site-footer {
   position: fixed;
   inset: auto 0 0;
@@ -210,18 +202,6 @@ function openResume() {
     align-content: center;
   }
 
-  .mobile-resume {
-    position: absolute;
-    bottom: 4.7rem;
-    display: block;
-    padding: 0.65rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 999px;
-    background: rgba(9, 17, 28, 0.38);
-    color: white;
-    backdrop-filter: blur(12px);
-    font-size: 0.73rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

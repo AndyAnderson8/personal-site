@@ -57,8 +57,8 @@ function onPointerMove(event: PointerEvent) {
       const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
       const horizontal = (event.clientX - bounds.left) / bounds.width - 0.5
       const vertical = (event.clientY - bounds.top) / bounds.height - 0.5
-      hoverRotateX.value = vertical * -1.8
-      hoverRotateY.value = horizontal * 2.4
+      hoverRotateX.value = vertical * -2.7
+      hoverRotateY.value = horizontal * 3.6
       scheduleProxiedHover(event.clientX, event.clientY)
     }
     return
