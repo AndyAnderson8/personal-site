@@ -1,16 +1,34 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from 'vue'
+import { defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
 import BusinessCard from './components/BusinessCard.vue'
+import { preloadResumePdf } from './lib/resumePdf'
 
 const resumeOpen = ref(false)
 const resumeMounted = ref(false)
 const AmbientScene = defineAsyncComponent(() => import('./components/AmbientScene.vue'))
 const ResumeModal = defineAsyncComponent(() => import('./components/ResumeModal.vue'))
+let resumePreloadHandle = 0
+let resumePreloadTimeout = 0
 
 function openResume() {
   resumeMounted.value = true
   resumeOpen.value = true
 }
+
+onMounted(() => {
+  const preload = () => void preloadResumePdf().catch(() => undefined)
+
+  if ('requestIdleCallback' in window) {
+    resumePreloadHandle = window.requestIdleCallback(preload, { timeout: 2_500 })
+  } else {
+    resumePreloadTimeout = window.setTimeout(preload, 800)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (resumePreloadHandle) window.cancelIdleCallback(resumePreloadHandle)
+  if (resumePreloadTimeout) clearTimeout(resumePreloadTimeout)
+})
 </script>
 
 <template>

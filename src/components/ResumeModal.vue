@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { TextLayerBuilder } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
-import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist'
+import type {
+  PDFDocumentLoadingTask,
+  PDFDocumentProxy,
+  PDFPageProxy,
+  RenderTask,
+  TextLayerImages,
+} from 'pdfjs-dist'
+import { getResumePdfData, resumePdfUrl } from '../lib/resumePdf'
 
 const props = defineProps<{
   open: boolean
@@ -18,7 +26,7 @@ const canvasWrap = ref<HTMLElement | null>(null)
 const resumeDialog = ref<HTMLElement | null>(null)
 const pageElement = ref<HTMLElement | null>(null)
 const canvas = ref<HTMLCanvasElement | null>(null)
-const textLayer = ref<HTMLElement | null>(null)
+const textLayerHost = ref<HTMLElement | null>(null)
 const zoom = ref(1)
 const pageNumber = ref(1)
 const pageCount = ref(0)
@@ -27,12 +35,13 @@ const error = ref('')
 const usingFallback = ref(false)
 const baseUrl = import.meta.env.BASE_URL
 const resumePageUrl = computed(() => `${baseUrl}resume-pages/page-${pageNumber.value}.png`)
-const resumePdfUrl = 'https://local.andy.uno/Andy-Anderson-Resume.pdf'
 let pdf: PDFDocumentProxy | null = null
 let page: PDFPageProxy | null = null
 let loadTask: PDFDocumentLoadingTask | null = null
 let renderTask: RenderTask | null = null
-let textLayerTask: InstanceType<typeof pdfjs.TextLayer> | null = null
+let textLayerBuilder: TextLayerBuilder | null = null
+let textLayerPage: PDFPageProxy | null = null
+const textLayerAbortController = new AbortController()
 let resizeTimer = 0
 let previousFocus: HTMLElement | null = null
 
@@ -42,8 +51,9 @@ async function loadPdf() {
   usingFallback.value = false
 
   try {
+    const data = await getResumePdfData()
     loadTask = pdfjs.getDocument({
-      url: resumePdfUrl,
+      data,
       isEvalSupported: false,
     })
     pdf = await loadTask.promise
@@ -61,11 +71,22 @@ async function loadPdf() {
 }
 
 async function renderPage() {
-  if (!page || !canvasWrap.value || !pageElement.value || !canvas.value || !textLayer.value) return
+  if (!page || !canvasWrap.value || !pageElement.value || !canvas.value || !textLayerHost.value) {
+    return
+  }
 
   renderTask?.cancel()
-  textLayerTask?.cancel()
-  textLayer.value.replaceChildren()
+
+  if (!textLayerBuilder || textLayerPage !== page) {
+    textLayerBuilder?.cancel()
+    textLayerHost.value.replaceChildren()
+    textLayerPage = page
+    textLayerBuilder = new TextLayerBuilder({
+      pdfPage: page,
+      abortSignal: textLayerAbortController.signal,
+      onAppend: (textLayer: HTMLElement) => textLayerHost.value?.append(textLayer),
+    })
+  }
 
   const unscaledViewport = page.getViewport({ scale: 1 })
   const fittedWidth = Math.min(canvasWrap.value.clientWidth - 32, 940)
@@ -89,14 +110,14 @@ async function renderPage() {
     viewport,
     transform: outputScale === 1 ? undefined : [outputScale, 0, 0, outputScale, 0, 0],
   })
-  textLayerTask = new pdfjs.TextLayer({
-    textContentSource: page.streamTextContent({ includeMarkedContent: true }),
-    container: textLayer.value,
+
+  const textRender = textLayerBuilder.render({
     viewport,
+    images: null as unknown as TextLayerImages,
   })
 
   try {
-    await Promise.all([renderTask.promise, textLayerTask.render()])
+    await Promise.all([renderTask.promise, textRender])
   } catch (reason) {
     if ((reason as { name?: string }).name !== 'RenderingCancelledException') throw reason
   }
@@ -115,7 +136,9 @@ async function changePage(amount: number) {
   loading.value = true
   try {
     renderTask?.cancel()
-    textLayerTask?.cancel()
+    textLayerBuilder?.cancel()
+    textLayerBuilder = null
+    textLayerPage = null
     pageNumber.value = nextPage
     page = await pdf.getPage(nextPage)
     await nextTick()
@@ -248,7 +271,8 @@ watch(
 onBeforeUnmount(() => {
   clearTimeout(resizeTimer)
   renderTask?.cancel()
-  textLayerTask?.cancel()
+  textLayerBuilder?.cancel()
+  textLayerAbortController.abort()
   void loadTask?.destroy()
   pdf = null
   page = null
@@ -347,7 +371,11 @@ onBeforeUnmount(() => {
               :class="{ hidden: loading }"
             >
               <canvas ref="canvas"></canvas>
-              <div ref="textLayer" class="text-layer" aria-label="Selectable résumé text"></div>
+              <div
+                ref="textLayerHost"
+                class="text-layer-host"
+                aria-label="Selectable résumé text"
+              ></div>
             </div>
             <img
               v-if="usingFallback"
@@ -516,12 +544,18 @@ onBeforeUnmount(() => {
   display: block;
 }
 
-.text-layer {
+.text-layer-host {
   position: absolute;
   inset: 0;
   z-index: 2;
+}
+
+.text-layer-host :deep(.textLayer) {
+  position: absolute;
+  inset: 0;
   overflow: clip;
   color-scheme: only light;
+  opacity: 1;
   line-height: 1;
   text-align: initial;
   letter-spacing: normal;
@@ -529,13 +563,12 @@ onBeforeUnmount(() => {
   transform-origin: 0 0;
   forced-color-adjust: none;
   text-size-adjust: none;
-  --min-font-size: 1;
   --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
   --min-font-size-inv: calc(1 / var(--min-font-size));
 }
 
-.text-layer :deep(span),
-.text-layer :deep(br) {
+.text-layer-host :deep(.textLayer span),
+.text-layer-host :deep(.textLayer br) {
   position: absolute;
   color: transparent;
   white-space: pre;
@@ -544,20 +577,42 @@ onBeforeUnmount(() => {
   user-select: text;
 }
 
-.text-layer :deep(> :not(.markedContent)),
-.text-layer :deep(.markedContent span:not(.markedContent)) {
+.text-layer-host :deep(.textLayer > :not(.markedContent)),
+.text-layer-host :deep(.textLayer .markedContent span:not(.markedContent)) {
   z-index: 1;
   font-size: calc(var(--text-scale-factor) * var(--font-height));
   transform: rotate(var(--rotate, 0deg)) scaleX(var(--scale-x, 1)) scale(var(--min-font-size-inv));
 }
 
-.text-layer :deep(.markedContent) {
+.text-layer-host :deep(.textLayer .markedContent) {
   display: contents;
 }
 
-.text-layer :deep(::selection) {
+.text-layer-host :deep(.textLayer span[role='img']) {
+  cursor: default;
+  user-select: none;
+}
+
+.text-layer-host :deep(.textLayer ::selection) {
   background: rgba(201, 133, 61, 0.38);
   color: transparent;
+}
+
+.text-layer-host :deep(.textLayer br::selection) {
+  background: transparent;
+}
+
+.text-layer-host :deep(.textLayer .endOfContent) {
+  position: absolute;
+  display: block;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+
+.text-layer-host :deep(.textLayer.selecting .endOfContent) {
+  top: 0;
 }
 
 .fallback-page {
