@@ -219,9 +219,7 @@ onMounted(() => {
       '.card-front .card-actions a, .card-front .card-actions button, .card-front .corner-flip',
     ),
   )
-  backControls = Array.from(
-    cardArea.value.querySelectorAll<HTMLElement>('.card-back .corner-flip'),
-  )
+  backControls = Array.from(cardArea.value.querySelectorAll<HTMLElement>('.card-back .corner-flip'))
 })
 
 onBeforeUnmount(() => {
@@ -255,69 +253,93 @@ onBeforeUnmount(() => {
         :class="{ dragging, coasting }"
         :style="{ transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)` }"
       >
-      <article class="card-face card-front">
-        <div class="paper-fibers"></div>
-        <div class="card-topline">
-          <span class="mini-mark">AA<span>.</span></span>
-        </div>
+        <article class="card-face card-front">
+          <div class="paper-fibers"></div>
+          <div class="card-topline">
+            <span class="mini-mark">AA<span>.</span></span>
+          </div>
 
-        <div class="identity">
-          <p class="kicker">Backend Engineer</p>
-          <h2>Andy<br />Anderson</h2>
-          <div class="rule"></div>
-          <p class="company">Microchip Technology</p>
-        </div>
-        <span class="front-location">PHX · AZ</span>
+          <div class="identity">
+            <p class="kicker">AI Engineer</p>
+            <h2>Andy<br />Anderson</h2>
+            <div class="rule"></div>
+            <p class="company">Microchip Technology</p>
+          </div>
+          <span class="front-location">PHX · AZ</span>
 
-        <nav class="card-actions" aria-label="Contact links">
-          <a href="https://www.linkedin.com/in/andyanderson8" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 8.4H3.2V20h3.5V8.4ZM5 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm8.1 5.4H9.7V20h3.4v-5.7c0-1.5.3-3 2.2-3 1.8 0 1.9 1.7 1.9 3.1V20h3.5v-6.2c0-3-0.7-5.7-4.5-5.7-1.8 0-3 1-3.5 1.9h-.1V8.4h.5Z"/></svg>
-            LinkedIn
-          </a>
-          <a href="https://github.com/AndyAnderson8" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-2c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 0 1.6 1 1.6 1 .9 1.6 2.4 1.1 2.9.9.1-.7.4-1.1.7-1.4-2.3-.3-4.6-1.1-4.6-5A4 4 0 0 1 6.7 8c-.1-.3-.5-1.3.1-2.7 0 0 .9-.3 2.8 1.1a9.6 9.6 0 0 1 5.1 0c2-1.4 2.8-1 2.8-1 .6 1.3.2 2.4.1 2.7a4 4 0 0 1 1.1 3c0 4-2.4 4.8-4.7 5 .4.4.7 1 .7 1.9v3c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"/></svg>
-            GitHub
-          </a>
-          <a href="mailto:andy@andylabs.org">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L19.2 7H4.8l7.2 5.2Zm0 2.4L4 8.8V17h16V8.8l-8 5.8Z"/></svg>
-            Email
-          </a>
-          <button type="button" @click="emit('openResume')">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6V2Zm8 1.8V8h4.2L14 3.8ZM8 12v1.5h9V12H8Zm0 4v1.5h9V16H8Z"/></svg>
-            Résumé
+          <nav class="card-actions" aria-label="Contact links">
+            <a
+              href="https://www.linkedin.com/in/andyanderson8"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6.7 8.4H3.2V20h3.5V8.4ZM5 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm8.1 5.4H9.7V20h3.4v-5.7c0-1.5.3-3 2.2-3 1.8 0 1.9 1.7 1.9 3.1V20h3.5v-6.2c0-3-0.7-5.7-4.5-5.7-1.8 0-3 1-3.5 1.9h-.1V8.4h.5Z"
+                />
+              </svg>
+              LinkedIn
+            </a>
+            <a href="https://github.com/AndyAnderson8" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-2c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 0 1.6 1 1.6 1 .9 1.6 2.4 1.1 2.9.9.1-.7.4-1.1.7-1.4-2.3-.3-4.6-1.1-4.6-5A4 4 0 0 1 6.7 8c-.1-.3-.5-1.3.1-2.7 0 0 .9-.3 2.8 1.1a9.6 9.6 0 0 1 5.1 0c2-1.4 2.8-1 2.8-1 .6 1.3.2 2.4.1 2.7a4 4 0 0 1 1.1 3c0 4-2.4 4.8-4.7 5 .4.4.7 1 .7 1.9v3c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"
+                />
+              </svg>
+              GitHub
+            </a>
+            <a href="mailto:andy@andylabs.org">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L19.2 7H4.8l7.2 5.2Zm0 2.4L4 8.8V17h16V8.8l-8 5.8Z"
+                />
+              </svg>
+              Email
+            </a>
+            <button type="button" @click="emit('openResume')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 2h8l5 5v15H6V2Zm8 1.8V8h4.2L14 3.8ZM8 12v1.5h9V12H8Zm0 4v1.5h9V16H8Z" />
+              </svg>
+              Résumé
+            </button>
+          </nav>
+
+          <button class="corner-flip" type="button" aria-label="Flip to back" @click="flipCard">
+            <span>Flip</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16.8 7.2A7 7 0 1 0 19 12h2a9 9 0 1 1-2.6-6.4L21 3v7h-7l2.8-2.8Z" />
+            </svg>
           </button>
-        </nav>
+        </article>
 
-        <button class="corner-flip" type="button" aria-label="Flip to back" @click="flipCard">
-          <span>Flip</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.8 7.2A7 7 0 1 0 19 12h2a9 9 0 1 1-2.6-6.4L21 3v7h-7l2.8-2.8Z"/></svg>
-        </button>
-      </article>
-
-      <article class="card-face card-back">
-        <div class="paper-fibers"></div>
-        <div class="back-grid">
-          <div class="back-mark">AA<span>.</span></div>
-          <div class="back-content">
-            <p class="kicker">Secure systems · Thoughtful software</p>
-            <p class="back-summary">
-              I design and build secure, data-driven software—from backend architecture
-              and cloud systems to real-time platforms and applied AI.
-            </p>
-            <div class="back-meta">
-              <span>andy@andylabs.org</span>
+        <article class="card-face card-back">
+          <div class="paper-fibers"></div>
+          <div class="back-grid">
+            <div class="back-mark">AA<span>.</span></div>
+            <div class="back-content">
+              <p class="kicker">Enterprise AI · Platforms · Applied ML</p>
+              <p class="back-summary">
+                I build secure, production AI systems—from Microsoft 365 MCP integrations and
+                RAG-powered knowledge retrieval to enterprise AI gateways, data platforms, and
+                developer tooling.
+              </p>
+              <div class="back-meta">
+                <span>Python · Java · .NET · TypeScript</span>
+                <span>andy@andylabs.org</span>
+              </div>
             </div>
           </div>
-        </div>
-        <button class="corner-flip" type="button" aria-label="Flip to front" @click="flipCard">
-          <span>Flip</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.8 7.2A7 7 0 1 0 19 12h2a9 9 0 1 1-2.6-6.4L21 3v7h-7l2.8-2.8Z"/></svg>
-        </button>
-      </article>
+          <button class="corner-flip" type="button" aria-label="Flip to front" @click="flipCard">
+            <span>Flip</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16.8 7.2A7 7 0 1 0 19 12h2a9 9 0 1 1-2.6-6.4L21 3v7h-7l2.8-2.8Z" />
+            </svg>
+          </button>
+        </article>
 
-      <div class="card-edge edge-top"></div>
-      <div class="card-edge edge-bottom"></div>
-      <div class="card-edge edge-left"></div>
+        <div class="card-edge edge-top"></div>
+        <div class="card-edge edge-bottom"></div>
+        <div class="card-edge edge-left"></div>
         <div class="card-edge edge-right"></div>
       </div>
     </div>
@@ -325,7 +347,9 @@ onBeforeUnmount(() => {
     <div class="card-shadow" :class="{ dragging }"></div>
     <Transition name="hint" appear>
       <div v-if="!dragHintDismissed" class="drag-hint">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 9 5h2v4H7V7l-3 3 3 3v-2h4v4H9l3 3 3-3h-2v-4h4v2l3-3-3-3v2h-4V5h2l-3-3Z"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2 9 5h2v4H7V7l-3 3 3 3v-2h4v4H9l3 3 3-3h-2v-4h4v2l3-3-3-3v2h-4V5h2l-3-3Z" />
+        </svg>
         Drag to explore · double-click to flip
       </div>
     </Transition>
@@ -375,9 +399,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid rgba(106, 91, 67, 0.28);
   border-radius: 0.884cqw;
-  background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.75), transparent 35%),
-    #ebe5d8;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.75), transparent 35%), #ebe5d8;
   color: #182127;
   box-shadow:
     inset 0 0 0.465cqw rgba(255, 255, 255, 0.9),
@@ -400,8 +422,18 @@ onBeforeUnmount(() => {
   mix-blend-mode: multiply;
   filter: contrast(140%);
   background-image:
-    repeating-linear-gradient(83deg, transparent 0 7px, rgba(77, 62, 41, 0.025) 8px, transparent 9px),
-    repeating-linear-gradient(3deg, transparent 0 5px, rgba(255, 255, 255, 0.22) 6px, transparent 7px),
+    repeating-linear-gradient(
+      83deg,
+      transparent 0 7px,
+      rgba(77, 62, 41, 0.025) 8px,
+      transparent 9px
+    ),
+    repeating-linear-gradient(
+      3deg,
+      transparent 0 5px,
+      rgba(255, 255, 255, 0.22) 6px,
+      transparent 7px
+    ),
     url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
 }
 
@@ -598,8 +630,7 @@ onBeforeUnmount(() => {
 .card-edge {
   position: absolute;
   z-index: -1;
-  background:
-    repeating-linear-gradient(0deg, #d6cdbd 0 1px, #f0ebdf 1px 2px);
+  background: repeating-linear-gradient(0deg, #d6cdbd 0 1px, #f0ebdf 1px 2px);
   backface-visibility: visible;
 }
 
@@ -610,8 +641,14 @@ onBeforeUnmount(() => {
   height: 2.035cqw;
 }
 
-.edge-top { top: -1.017cqw; transform: rotateX(90deg); }
-.edge-bottom { bottom: -1.017cqw; transform: rotateX(90deg); }
+.edge-top {
+  top: -1.017cqw;
+  transform: rotateX(90deg);
+}
+.edge-bottom {
+  bottom: -1.017cqw;
+  transform: rotateX(90deg);
+}
 
 .edge-left,
 .edge-right {
@@ -620,8 +657,14 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 
-.edge-left { left: -1.017cqw; transform: rotateY(90deg); }
-.edge-right { right: -1.017cqw; transform: rotateY(90deg); }
+.edge-left {
+  left: -1.017cqw;
+  transform: rotateY(90deg);
+}
+.edge-right {
+  right: -1.017cqw;
+  transform: rotateY(90deg);
+}
 
 .card-shadow {
   position: absolute;
