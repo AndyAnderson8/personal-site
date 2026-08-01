@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useMotionPreference } from '../composables/useMotionPreference'
+import { pdfToSvg } from '../lib/pdfToSvg'
 import ResumeCard from './ResumeCard.vue'
 
 const resumePdfUrl = 'https://local.andy.uno/Andy-Anderson-Resume.pdf'
@@ -19,8 +20,12 @@ const loading = ref(true)
 const failed = ref(false)
 let previousFocus: HTMLElement | null = null
 let printFrame: HTMLIFrameElement | null = null
-let printUrl = ''
 let printTimer = 0
+const cachedPdfUrl = ref('')
+const cachedSvgUrl = ref('')
+let cachedPdf: ArrayBuffer | null = null
+let pdfController: AbortController | null = null
+let pdfRequest: Promise<void> | null = null
 
 function closeResume() {
   emit('close')
@@ -29,19 +34,56 @@ function closeResume() {
 function clearPrint() {
   clearTimeout(printTimer)
   printFrame?.remove()
-  if (printUrl) URL.revokeObjectURL(printUrl)
   printFrame = null
-  printUrl = ''
 }
 
-async function printResume() {
+function loadResumePdf() {
+  if (cachedSvgUrl.value || pdfRequest) return
+
+  pdfController = new AbortController()
+  const signal = pdfController.signal
+  pdfRequest = Promise.resolve(cachedPdf)
+    .then((pdf) => {
+      if (pdf) return pdf
+      return fetch(resumePdfUrl, { signal }).then(async (response) => {
+        if (!response.ok) throw new Error(`PDF request failed with ${response.status}.`)
+        return response.arrayBuffer()
+      })
+    })
+    .then(async (pdf) => {
+      cachedPdf = pdf
+      if (!cachedPdfUrl.value) {
+        cachedPdfUrl.value = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }))
+      }
+      const svg = await pdfToSvg(pdf.slice(0), signal)
+      cachedSvgUrl.value = URL.createObjectURL(svg)
+    })
+    .catch((reason) => {
+      if ((reason as { name?: string }).name !== 'AbortError') {
+        console.warn('The résumé preview could not be prepared.', reason)
+        loading.value = false
+        failed.value = true
+      }
+    })
+    .finally(() => {
+      pdfController = null
+      pdfRequest = null
+    })
+}
+
+function downloadResume() {
+  if (!cachedPdfUrl.value) return
+  const link = document.createElement('a')
+  link.href = cachedPdfUrl.value
+  link.download = 'Andy-Anderson-Resume.pdf'
+  link.click()
+}
+
+function printResume() {
+  if (!cachedPdfUrl.value) return
   clearPrint()
 
   try {
-    const response = await fetch(resumePdfUrl)
-    if (!response.ok) throw new Error(`PDF request failed with ${response.status}.`)
-
-    printUrl = URL.createObjectURL(await response.blob())
     printFrame = document.createElement('iframe')
     printFrame.title = 'Print résumé'
     printFrame.style.cssText =
@@ -59,12 +101,12 @@ async function printResume() {
       },
       { once: true },
     )
-    printFrame.src = printUrl
+    printFrame.src = cachedPdfUrl.value
     document.body.append(printFrame)
     printTimer = window.setTimeout(clearPrint, 60_000)
   } catch (reason) {
     console.warn('Direct printing is unavailable; opening the résumé instead.', reason)
-    window.open(resumePdfUrl, '_blank', 'noopener,noreferrer')
+    window.open(cachedPdfUrl.value, '_blank', 'noopener,noreferrer')
   }
 }
 
@@ -93,12 +135,15 @@ function trapFocus(event: KeyboardEvent) {
   }
 }
 
+loadResumePdf()
+
 watch(
   () => props.open,
   async (isOpen) => {
     if (isOpen) {
       loading.value = true
       failed.value = false
+      loadResumePdf()
       previousFocus = document.activeElement as HTMLElement | null
       addEventListener('keydown', onKeydown)
       await nextTick()
@@ -114,7 +159,11 @@ watch(
 
 onBeforeUnmount(() => {
   removeEventListener('keydown', onKeydown)
+  pdfController?.abort()
   clearPrint()
+  if (cachedPdfUrl.value) URL.revokeObjectURL(cachedPdfUrl.value)
+  if (cachedSvgUrl.value) URL.revokeObjectURL(cachedSvgUrl.value)
+  cachedPdf = null
 })
 </script>
 
@@ -133,25 +182,33 @@ onBeforeUnmount(() => {
         <div class="resume-backdrop" @click="closeResume"></div>
 
         <ResumeCard
-          :pdf-url="resumePdfUrl"
+          v-if="cachedSvgUrl"
+          :svg-url="cachedSvgUrl"
           @ready="loading = false"
           @error="((loading = false), (failed = true))"
         />
 
         <div class="resume-actions">
-          <a
-            :href="resumePdfUrl"
-            download="Andy-Anderson-Resume.pdf"
+          <button
+            type="button"
+            :disabled="!cachedPdfUrl"
             aria-label="Download résumé PDF"
             title="Download PDF"
+            @click="downloadResume"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M11 3h2v10l3.5-3.5 1.4 1.4-5.9 5.9-5.9-5.9 1.4-1.4L11 13V3ZM5 19h14v2H5v-2Z"
               />
             </svg>
-          </a>
-          <button type="button" aria-label="Print résumé" title="Print" @click="printResume">
+          </button>
+          <button
+            type="button"
+            :disabled="!cachedPdfUrl"
+            aria-label="Print résumé"
+            title="Print"
+            @click="printResume"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M6 3h12v5h1a3 3 0 0 1 3 3v6h-4v4H6v-4H2v-6a3 3 0 0 1 3-3h1V3Zm2 2v3h8V5H8Zm8 14v-5H8v5h8Zm3-8.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"
@@ -167,12 +224,16 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-if="loading" class="resume-status" aria-live="polite">Preparing résumé…</div>
-        <div v-else-if="failed" class="resume-status error" aria-live="polite">
-          <span>Couldn’t render the 3D preview.</span>
-          <a :href="resumePdfUrl" download="Andy-Anderson-Resume.pdf">Download the PDF</a>
+        <div v-if="loading" class="resume-status floating-label" aria-live="polite">
+          Preparing résumé…
         </div>
-        <div v-else class="rotate-hint">
+        <div v-else-if="failed" class="resume-status floating-label error" aria-live="polite">
+          <span>Couldn’t render the 3D preview.</span>
+          <a :href="cachedPdfUrl || resumePdfUrl" download="Andy-Anderson-Resume.pdf">
+            Download the PDF
+          </a>
+        </div>
+        <div v-else class="rotate-hint floating-label">
           {{
             motionDisabled ? 'Scroll or pinch to zoom' : 'Drag to rotate · scroll or pinch to zoom'
           }}
@@ -240,22 +301,18 @@ onBeforeUnmount(() => {
   fill: currentColor;
 }
 
+.resume-actions button:disabled {
+  opacity: 0.35;
+  cursor: wait;
+}
+
 .resume-status,
 .rotate-hint {
   position: absolute;
   z-index: 4;
   bottom: clamp(1.25rem, 3vw, 2.5rem);
   left: 50%;
-  padding: 0.48rem 0.72rem;
-  border-radius: 999px;
-  background: rgba(6, 13, 21, 0.46);
-  color: rgba(255, 255, 255, 0.62);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   transform: translateX(-50%);
-  backdrop-filter: blur(8px);
   pointer-events: none;
 }
 
