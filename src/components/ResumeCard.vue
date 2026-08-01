@@ -12,6 +12,7 @@ const props = defineProps<{ pdfUrl: string }>()
 const emit = defineEmits<{
   ready: []
   error: []
+  pdfLoaded: [data: Uint8Array]
 }>()
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
@@ -254,6 +255,7 @@ onMounted(async () => {
   try {
     loadTask = pdfjs.getDocument({ url: props.pdfUrl, isEvalSupported: false })
     const pdf = await loadTask.promise
+    emit('pdfLoaded', await pdf.getData())
     page = await pdf.getPage(1)
     resizeObserver = new ResizeObserver(scheduleRender)
     resizeObserver.observe(canvas.value)

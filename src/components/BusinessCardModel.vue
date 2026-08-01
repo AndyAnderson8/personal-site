@@ -170,7 +170,6 @@ onBeforeUnmount(() => {
       </PaperModel>
     </div>
 
-    <div class="card-shadow" :class="{ dragging }"></div>
     <Transition name="hint" appear>
       <div v-if="!motionDisabled && !dragHintDismissed" class="drag-hint">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -215,7 +214,14 @@ onBeforeUnmount(() => {
   --paper-step: 0.16cqw;
   --paper-radius: 0.884cqw;
   --paper-border: rgba(106, 91, 67, 0.28);
-  --paper-background: linear-gradient(115deg, rgba(255, 255, 255, 0.75), transparent 35%), #ebe5d8;
+  --paper-background:
+    linear-gradient(
+      to left,
+      rgba(255, 255, 255, 0.72),
+      rgba(255, 255, 255, 0.2) 26%,
+      transparent 52%
+    ),
+    #ebe5d8;
   --paper-shadow:
     inset 0 0 0.465cqw rgba(255, 255, 255, 0.9), inset 0 0 4.65cqw rgba(99, 78, 49, 0.06);
   --paper-edge: repeating-linear-gradient(0deg, #d6cdbd 0 1px, #f0ebdf 1px 2px);
@@ -227,31 +233,6 @@ onBeforeUnmount(() => {
 .card-area.dragging :deep(.card-actions button),
 .card-area.dragging :deep(.corner-flip) {
   pointer-events: none;
-}
-
-.card-shadow {
-  position: absolute;
-  z-index: 0;
-  right: 6%;
-  bottom: -9%;
-  left: 6%;
-  height: 18%;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(1, 4, 8, 0.68) 0%,
-    rgba(1, 4, 8, 0.5) 44%,
-    rgba(1, 4, 8, 0) 78%
-  );
-  filter: blur(5.116cqw);
-  opacity: 0.72;
-  transform: translateZ(-100px);
-  transition: 300ms ease;
-}
-
-.card-shadow.dragging {
-  opacity: 0.5;
-  transform: scale(0.88) translateY(12px);
 }
 
 .drag-hint {

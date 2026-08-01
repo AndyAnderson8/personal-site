@@ -19,8 +19,8 @@ const loading = ref(true)
 const failed = ref(false)
 let previousFocus: HTMLElement | null = null
 let printFrame: HTMLIFrameElement | null = null
-let printUrl = ''
 let printTimer = 0
+const cachedPdfUrl = ref('')
 
 function closeResume() {
   emit('close')
@@ -29,19 +29,30 @@ function closeResume() {
 function clearPrint() {
   clearTimeout(printTimer)
   printFrame?.remove()
-  if (printUrl) URL.revokeObjectURL(printUrl)
   printFrame = null
-  printUrl = ''
 }
 
-async function printResume() {
+function cacheResumePdf(data: Uint8Array) {
+  clearPrint()
+  if (cachedPdfUrl.value) URL.revokeObjectURL(cachedPdfUrl.value)
+  const copy = new Uint8Array(data.byteLength)
+  copy.set(data)
+  cachedPdfUrl.value = URL.createObjectURL(new Blob([copy.buffer], { type: 'application/pdf' }))
+}
+
+function downloadResume() {
+  if (!cachedPdfUrl.value) return
+  const link = document.createElement('a')
+  link.href = cachedPdfUrl.value
+  link.download = 'Andy-Anderson-Resume.pdf'
+  link.click()
+}
+
+function printResume() {
+  if (!cachedPdfUrl.value) return
   clearPrint()
 
   try {
-    const response = await fetch(resumePdfUrl)
-    if (!response.ok) throw new Error(`PDF request failed with ${response.status}.`)
-
-    printUrl = URL.createObjectURL(await response.blob())
     printFrame = document.createElement('iframe')
     printFrame.title = 'Print résumé'
     printFrame.style.cssText =
@@ -59,12 +70,12 @@ async function printResume() {
       },
       { once: true },
     )
-    printFrame.src = printUrl
+    printFrame.src = cachedPdfUrl.value
     document.body.append(printFrame)
     printTimer = window.setTimeout(clearPrint, 60_000)
   } catch (reason) {
     console.warn('Direct printing is unavailable; opening the résumé instead.', reason)
-    window.open(resumePdfUrl, '_blank', 'noopener,noreferrer')
+    window.open(cachedPdfUrl.value, '_blank', 'noopener,noreferrer')
   }
 }
 
@@ -115,6 +126,7 @@ watch(
 onBeforeUnmount(() => {
   removeEventListener('keydown', onKeydown)
   clearPrint()
+  if (cachedPdfUrl.value) URL.revokeObjectURL(cachedPdfUrl.value)
 })
 </script>
 
@@ -136,22 +148,30 @@ onBeforeUnmount(() => {
           :pdf-url="resumePdfUrl"
           @ready="loading = false"
           @error="((loading = false), (failed = true))"
+          @pdf-loaded="cacheResumePdf"
         />
 
         <div class="resume-actions">
-          <a
-            :href="resumePdfUrl"
-            download="Andy-Anderson-Resume.pdf"
+          <button
+            type="button"
+            :disabled="!cachedPdfUrl"
             aria-label="Download résumé PDF"
             title="Download PDF"
+            @click="downloadResume"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M11 3h2v10l3.5-3.5 1.4 1.4-5.9 5.9-5.9-5.9 1.4-1.4L11 13V3ZM5 19h14v2H5v-2Z"
               />
             </svg>
-          </a>
-          <button type="button" aria-label="Print résumé" title="Print" @click="printResume">
+          </button>
+          <button
+            type="button"
+            :disabled="!cachedPdfUrl"
+            aria-label="Print résumé"
+            title="Print"
+            @click="printResume"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M6 3h12v5h1a3 3 0 0 1 3 3v6h-4v4H6v-4H2v-6a3 3 0 0 1 3-3h1V3Zm2 2v3h8V5H8Zm8 14v-5H8v5h8Zm3-8.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"
@@ -170,7 +190,9 @@ onBeforeUnmount(() => {
         <div v-if="loading" class="resume-status" aria-live="polite">Preparing résumé…</div>
         <div v-else-if="failed" class="resume-status error" aria-live="polite">
           <span>Couldn’t render the 3D preview.</span>
-          <a :href="resumePdfUrl" download="Andy-Anderson-Resume.pdf">Download the PDF</a>
+          <a :href="cachedPdfUrl || resumePdfUrl" download="Andy-Anderson-Resume.pdf">
+            Download the PDF
+          </a>
         </div>
         <div v-else class="rotate-hint">
           {{
@@ -238,6 +260,11 @@ onBeforeUnmount(() => {
 .resume-actions svg {
   width: 1rem;
   fill: currentColor;
+}
+
+.resume-actions button:disabled {
+  opacity: 0.35;
+  cursor: wait;
 }
 
 .resume-status,
