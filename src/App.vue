@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from 'vue'
+import { defineAsyncComponent, onBeforeUnmount, ref, watch } from 'vue'
+import AaMark from './components/AaMark.vue'
 import BusinessCard from './components/BusinessCard.vue'
+import { useMotionPreference } from './composables/useMotionPreference'
 
 const resumeOpen = ref(false)
 const resumeMounted = ref(false)
+const { motionDisabled, toggleMotion } = useMotionPreference()
 const AmbientScene = defineAsyncComponent(() => import('./components/AmbientScene.vue'))
 const ResumeModal = defineAsyncComponent(() => import('./components/ResumeModal.vue'))
 
@@ -11,6 +14,17 @@ function openResume() {
   resumeMounted.value = true
   resumeOpen.value = true
 }
+
+const stopWatchingMotion = watch(
+  motionDisabled,
+  (disabled) => document.documentElement.classList.toggle('motion-disabled', disabled),
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  stopWatchingMotion()
+  document.documentElement.classList.remove('motion-disabled')
+})
 </script>
 
 <template>
@@ -20,16 +34,7 @@ function openResume() {
     <header class="site-header">
       <div class="site-header-inner">
         <a class="brand" href="#" aria-label="Andy Anderson, home">
-          <svg class="brand-mark" viewBox="0 0 42 42" aria-hidden="true">
-            <path
-              class="brand-mark-outline"
-              d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z"
-            />
-            <path
-              class="brand-mark-solid"
-              d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z"
-            />
-          </svg>
+          <AaMark class="brand-mark" />
           <span class="brand-name">andy<span>/</span>anderson</span>
         </a>
 
@@ -47,12 +52,22 @@ function openResume() {
     <footer class="site-footer">
       <div class="site-footer-inner">
         <span>© {{ new Date().getFullYear() }} Andy Anderson</span>
-        <span>Built with Vue + Three.js</span>
       </div>
     </footer>
 
     <ResumeModal v-if="resumeMounted" :open="resumeOpen" @close="resumeOpen = false" />
   </div>
+
+  <Teleport to="body">
+    <button
+      class="motion-toggle"
+      type="button"
+      :aria-pressed="motionDisabled"
+      @click="toggleMotion"
+    >
+      {{ motionDisabled ? 'Enable motion' : 'Disable motion' }}
+    </button>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -93,40 +108,8 @@ function openResume() {
 }
 
 .brand-mark {
-  width: 2.15rem;
-  height: 2.15rem;
-  overflow: visible;
-}
-
-.brand-mark path {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition:
-    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 260ms ease;
-}
-
-.brand-mark-outline {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.62);
-  stroke-width: 1.2;
-  opacity: 0.78;
-}
-
-.brand-mark-solid {
-  fill: #dfb26a;
-  opacity: 0.92;
-  transform: translate(6px, 6px);
-}
-
-.brand:hover .brand-mark-outline {
-  opacity: 1;
-  transform: translate(-2.5px, -2.5px) rotate(-1deg);
-}
-
-.brand:hover .brand-mark-solid {
-  opacity: 1;
-  transform: translate(8.5px, 8.5px) rotate(1deg);
+  --aa-accent: #dfb26a;
+  font-size: 1.75rem;
 }
 
 .brand-name {
@@ -190,6 +173,22 @@ function openResume() {
   padding: 1.5rem var(--content-gutter);
 }
 
+.motion-toggle {
+  position: fixed;
+  z-index: 110;
+  right: clamp(1.25rem, 4vw, 4.5rem);
+  bottom: 1.5rem;
+  color: rgba(255, 255, 255, 0.48);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+}
+
+.motion-toggle:hover,
+.motion-toggle[aria-pressed='true'] {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 @keyframes breathe {
   50% {
     opacity: 0.45;
@@ -209,24 +208,6 @@ function openResume() {
   .card-stage {
     padding: 8.5rem 1rem 5rem;
     align-content: center;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .status-dot {
-    animation: none;
-  }
-
-  .brand-mark path {
-    transition: opacity 120ms ease;
-  }
-
-  .brand:hover .brand-mark-outline {
-    transform: none;
-  }
-
-  .brand:hover .brand-mark-solid {
-    transform: translate(6px, 6px);
   }
 }
 </style>

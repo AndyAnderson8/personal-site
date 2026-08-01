@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import {
-  AdditiveBlending,
-  BufferAttribute,
-  BufferGeometry,
-  Clock,
-  PerspectiveCamera,
-  Points,
-  PointsMaterial,
-  Scene,
-  WebGLRenderer,
-} from 'three'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useMotionPreference } from '../composables/useMotionPreference'
 
 const canvas = ref<HTMLCanvasElement | null>(null)
+const { motionDisabled } = useMotionPreference()
 const backgroundUrl = `${import.meta.env.BASE_URL}desert-dusk.png`
-let renderer: WebGLRenderer | undefined
-let animationFrame = 0
 let cleanup = () => {}
+
+type Particle = {
+  x: number
+  y: number
+  size: number
+  alpha: number
+  speed: number
+}
 
 onBeforeUnmount(() => {
   cleanup()
@@ -25,89 +22,96 @@ onBeforeUnmount(() => {
 onMounted(() => {
   if (!canvas.value) return
 
-  const scene = new Scene()
-  const camera = new PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 100)
-  camera.position.z = 9
+  const context = canvas.value.getContext('2d')
+  if (!context) return
 
-  try {
-    renderer = new WebGLRenderer({
-      canvas: canvas.value,
-      alpha: true,
-      antialias: true,
-      powerPreference: 'low-power',
-    })
-  } catch (reason) {
-    console.warn('WebGL ambience is unavailable; using the photographic background only.', reason)
-    return
-  }
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5))
-  renderer.setSize(innerWidth, innerHeight)
+  const reducedMotion = () => motionDisabled.value
+  const pointer = { x: 0, y: 0, currentX: 0, currentY: 0 }
+  let width = innerWidth
+  let height = innerHeight
+  let particles: Particle[] = []
+  let animationFrame = 0
+  let pointerListening = false
 
-  const count = innerWidth < 700 ? 280 : 620
-  const positions = new Float32Array(count * 3)
-
-  for (let i = 0; i < count; i += 1) {
-    positions[i * 3] = (Math.random() - 0.5) * 20
-    positions[i * 3 + 1] = (Math.random() - 0.65) * 10
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 8
+  const createParticles = () => {
+    const count = width < 700 ? 280 : 620
+    particles = Array.from({ length: count }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      size: 0.45 + Math.random() * 1.1,
+      alpha: 0.12 + Math.random() * 0.3,
+      speed: 0.004 + Math.random() * 0.012,
+    }))
   }
 
-  const geometry = new BufferGeometry()
-  geometry.setAttribute('position', new BufferAttribute(positions, 3))
+  const draw = (timestamp = 0) => {
+    context.clearRect(0, 0, width, height)
+    context.globalCompositeOperation = 'lighter'
+    pointer.currentX += (pointer.x - pointer.currentX) * 0.018
+    pointer.currentY += (pointer.y - pointer.currentY) * 0.018
 
-  const material = new PointsMaterial({
-    color: 0xe8c18b,
-    size: 0.018,
-    transparent: true,
-    opacity: 0.42,
-    depthWrite: false,
-    blending: AdditiveBlending,
-  })
-  const dust = new Points(geometry, material)
-  scene.add(dust)
-
-  const pointer = { x: 0, y: 0 }
-  const onPointerMove = (event: PointerEvent) => {
-    pointer.x = event.clientX / innerWidth - 0.5
-    pointer.y = event.clientY / innerHeight - 0.5
-  }
-  const onResize = () => {
-    if (!renderer) return
-    camera.aspect = innerWidth / innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(innerWidth, innerHeight)
-    if (reducedMotion) renderer.render(scene, camera)
-  }
-
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
-  const clock = new Clock()
-  const animate = () => {
-    const elapsed = clock.getElapsedTime()
-    if (!reducedMotion) {
-      dust.rotation.y = elapsed * 0.008
-      dust.position.y = Math.sin(elapsed * 0.18) * 0.12
-      camera.position.x += (pointer.x * 0.32 - camera.position.x) * 0.018
-      camera.position.y += (-pointer.y * 0.18 - camera.position.y) * 0.018
+    for (const particle of particles) {
+      const drift = reducedMotion() ? 0 : timestamp * particle.speed
+      const x = particle.x * width + pointer.currentX * 32
+      const y = (particle.y * height + drift + pointer.currentY * 18) % height
+      context.beginPath()
+      context.fillStyle = `rgba(232, 193, 139, ${particle.alpha})`
+      context.arc(x, y, particle.size, 0, Math.PI * 2)
+      context.fill()
     }
-    renderer?.render(scene, camera)
-    animationFrame = requestAnimationFrame(animate)
+
+    if (!reducedMotion()) animationFrame = requestAnimationFrame(draw)
   }
 
-  addEventListener('resize', onResize, { passive: true })
-  if (reducedMotion) {
-    renderer.render(scene, camera)
-  } else {
-    addEventListener('pointermove', onPointerMove, { passive: true })
-    animate()
+  const onPointerMove = (event: PointerEvent) => {
+    pointer.x = event.clientX / width - 0.5
+    pointer.y = event.clientY / height - 0.5
   }
+
+  const onResize = () => {
+    width = innerWidth
+    height = innerHeight
+    const pixelRatio = Math.min(devicePixelRatio, 1.5)
+    canvas.value!.width = Math.round(width * pixelRatio)
+    canvas.value!.height = Math.round(height * pixelRatio)
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+    createParticles()
+    if (reducedMotion()) draw()
+  }
+
+  const startMotion = () => {
+    if (reducedMotion() || animationFrame) return
+    if (!pointerListening) {
+      addEventListener('pointermove', onPointerMove, { passive: true })
+      pointerListening = true
+    }
+    animationFrame = requestAnimationFrame(draw)
+  }
+
+  const stopMotion = () => {
+    cancelAnimationFrame(animationFrame)
+    animationFrame = 0
+    if (pointerListening) {
+      removeEventListener('pointermove', onPointerMove)
+      pointerListening = false
+    }
+    pointer.x = pointer.y = pointer.currentX = pointer.currentY = 0
+    draw()
+  }
+
+  onResize()
+  addEventListener('resize', onResize, { passive: true })
+  startMotion()
+  const stopWatchingMotion = watch(motionDisabled, (disabled) => {
+    if (disabled) stopMotion()
+    else startMotion()
+  })
 
   cleanup = () => {
     cancelAnimationFrame(animationFrame)
+    stopWatchingMotion()
     removeEventListener('pointermove', onPointerMove)
     removeEventListener('resize', onResize)
-    geometry.dispose()
-    material.dispose()
-    renderer?.dispose()
   }
 })
 </script>
@@ -179,12 +183,6 @@ onMounted(() => {
   }
   to {
     transform: scale(1.045) translate3d(0.35%, -0.2%, 0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ambient-photo {
-    animation: none;
   }
 }
 </style>

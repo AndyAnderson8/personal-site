@@ -1,15 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <rect width="48" height="48" rx="10" fill="#07111f"/>
-  <path
-    d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z"
-    fill="none"
-    stroke="#f7f4ee"
-    stroke-width="1.4"
-    opacity=".82"
-  />
-  <path
-    d="M8 33 20.8 7 34 33h-7.1l-2.3-5.2h-8.3L14 33H8Zm10.7-10.9h3.6L20.5 18l-1.8 4.1Z"
-    fill="#dfb26a"
-    transform="translate(6 6)"
-  />
+  <rect width="48" height="48" rx="10" fill="#07111f" />
+  <text
+    x="5"
+    y="34"
+    fill="#f7f4ee"
+    font-family="Georgia, serif"
+    font-size="28"
+    font-weight="700"
+    letter-spacing="-3"
+  >AA<tspan fill="#dfb26a">.</tspan></text>
 </svg>
