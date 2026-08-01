@@ -104,29 +104,6 @@ const emit = defineEmits<{ openResume: [] }>()
   color: #182127;
 }
 
-.paper-fibers {
-  position: absolute;
-  inset: 0;
-  opacity: 0.6;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  filter: contrast(140%);
-  background-image:
-    repeating-linear-gradient(
-      83deg,
-      transparent 0 7px,
-      rgba(77, 62, 41, 0.025) 8px,
-      transparent 9px
-    ),
-    repeating-linear-gradient(
-      3deg,
-      transparent 0 5px,
-      rgba(255, 255, 255, 0.22) 6px,
-      transparent 7px
-    ),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
-}
-
 .card-topline {
   position: absolute;
   top: 7%;

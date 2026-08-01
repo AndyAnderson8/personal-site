@@ -1,18 +1,41 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onBeforeUnmount, ref, watch } from 'vue'
+import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AaMark from './components/AaMark.vue'
 import BusinessCard from './components/BusinessCard.vue'
 import { useMotionPreference } from './composables/useMotionPreference'
 
-const resumeOpen = ref(false)
-const resumeMounted = ref(false)
+const resumePath = '/resume'
+const isResumePath = () => location.pathname.replace(/\/$/, '') === resumePath
+if (location.hash === '#resume') history.replaceState(null, '', `${resumePath}${location.search}`)
+const resumeOpen = ref(isResumePath())
+let ownsResumeHistory = false
 const { motionDisabled, toggleMotion } = useMotionPreference()
 const AmbientScene = defineAsyncComponent(() => import('./components/AmbientScene.vue'))
 const ResumeModal = defineAsyncComponent(() => import('./components/ResumeModal.vue'))
 
 function openResume() {
-  resumeMounted.value = true
+  if (!isResumePath()) {
+    history.pushState(null, '', `${resumePath}${location.search}`)
+    ownsResumeHistory = true
+  }
   resumeOpen.value = true
+}
+
+function closeResume() {
+  resumeOpen.value = false
+  if (!isResumePath()) return
+
+  if (ownsResumeHistory) {
+    ownsResumeHistory = false
+    history.back()
+  } else {
+    history.replaceState(null, '', `/${location.search}`)
+  }
+}
+
+function syncResumeFromUrl() {
+  resumeOpen.value = isResumePath()
+  if (!resumeOpen.value) ownsResumeHistory = false
 }
 
 const stopWatchingMotion = watch(
@@ -21,7 +44,10 @@ const stopWatchingMotion = watch(
   { immediate: true },
 )
 
+onMounted(() => addEventListener('popstate', syncResumeFromUrl))
+
 onBeforeUnmount(() => {
+  removeEventListener('popstate', syncResumeFromUrl)
   stopWatchingMotion()
   document.documentElement.classList.remove('motion-disabled')
 })
@@ -55,12 +81,12 @@ onBeforeUnmount(() => {
       </div>
     </footer>
 
-    <ResumeModal v-if="resumeMounted" :open="resumeOpen" @close="resumeOpen = false" />
+    <ResumeModal :open="resumeOpen" @close="closeResume" />
   </div>
 
   <Teleport to="body">
     <button
-      class="motion-toggle"
+      class="motion-toggle floating-label"
       type="button"
       :aria-pressed="motionDisabled"
       @click="toggleMotion"
@@ -178,10 +204,6 @@ onBeforeUnmount(() => {
   z-index: 110;
   right: clamp(1.25rem, 4vw, 4.5rem);
   bottom: 1.5rem;
-  color: rgba(255, 255, 255, 0.48);
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.04em;
 }
 
 .motion-toggle:hover,

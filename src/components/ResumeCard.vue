@@ -1,23 +1,19 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
-import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
-import type { PDFDocumentLoadingTask, PDFPageProxy, RenderTask } from 'pdfjs-dist'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useMotionPreference } from '../composables/useMotionPreference'
 import { useRotatableMotion } from '../composables/useRotatableMotion'
 import AaMark from './AaMark.vue'
 import PaperModel from './PaperModel.vue'
 
-const props = defineProps<{ pdfUrl: string }>()
+defineProps<{
+  svgUrl: string
+}>()
+
 const emit = defineEmits<{
   ready: []
   error: []
-  pdfLoaded: [data: Uint8Array]
 }>()
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
-
-const canvas = ref<HTMLCanvasElement | null>(null)
 const { motionDisabled } = useMotionPreference()
 const motion = useRotatableMotion()
 const { rotationX, rotationY, dragging } = motion
@@ -32,14 +28,6 @@ const flat = computed(() => {
 const objectTransform = computed(() =>
   flat.value ? 'none' : `rotateX(${rotationX.value}deg) rotateY(${rotationY.value}deg)`,
 )
-let loadTask: PDFDocumentLoadingTask | null = null
-let renderTask: RenderTask | null = null
-let page: PDFPageProxy | null = null
-let resizeObserver: ResizeObserver | null = null
-let resizeFrame = 0
-let zoomRenderTimer = 0
-let renderVersion = 0
-let ready = false
 let pinchDistance = 0
 let pinchZoom = 1
 let pinchPanX = 0
@@ -49,61 +37,14 @@ let pinchCenterY = 0
 let pinchAnchorX = 0
 let pinchAnchorY = 0
 const pointers = new Map<number, { x: number; y: number }>()
-
-async function renderResume() {
-  if (!canvas.value || !page) return
-
-  const cssWidth = canvas.value.clientWidth
-  if (!cssWidth) return
-
-  const version = ++renderVersion
-  renderTask?.cancel()
-
-  const original = page.getViewport({ scale: 1 })
-  const pixelRatio = Math.min(devicePixelRatio || 1, 3)
-  const viewport = page.getViewport({ scale: cssWidth / original.width })
-  const outputScale = Math.min(pixelRatio * Math.max(1, zoom.value), 5_120 / viewport.width)
-  const buffer = document.createElement('canvas')
-  const context = buffer.getContext('2d', { alpha: false })
-  if (!context) throw new Error('Canvas rendering is unavailable.')
-
-  buffer.width = Math.ceil(viewport.width * outputScale)
-  buffer.height = Math.ceil(viewport.height * outputScale)
-  context.textRendering = 'optimizeLegibility'
-  renderTask = page.render({
-    canvas: buffer,
-    canvasContext: context,
-    viewport,
-    transform: outputScale === 1 ? undefined : [outputScale, 0, 0, outputScale, 0, 0],
-    background: '#fff',
-  })
-
-  try {
-    await renderTask.promise
-    if (version !== renderVersion || !canvas.value) return
-
-    const visibleContext = canvas.value.getContext('2d', { alpha: false })
-    if (!visibleContext) throw new Error('Canvas rendering is unavailable.')
-    canvas.value.width = buffer.width
-    canvas.value.height = buffer.height
-    visibleContext.drawImage(buffer, 0, 0)
-
-    if (!ready) {
-      ready = true
-      emit('ready')
-    }
-  } catch (reason) {
-    if ((reason as { name?: string }).name !== 'RenderingCancelledException') throw reason
-  }
-}
-
-function scheduleRender() {
-  cancelAnimationFrame(resizeFrame)
-  resizeFrame = requestAnimationFrame(() => void renderResume())
-}
+let wheelFrame = 0
+let wheelScale = 1
+let wheelX = 0
+let wheelY = 0
+let wheelSurface: HTMLElement | null = null
 
 function clampZoom(value: number) {
-  return Math.max(0.8, Math.min(1.65, value))
+  return Math.max(0.8, Math.min(5, value))
 }
 
 function pointerDistance() {
@@ -214,12 +155,18 @@ function onPointerEnd(event: PointerEvent, cancelled = false) {
 function onWheel(event: WheelEvent) {
   const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : innerHeight
   const delta = event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? event.deltaY : event.deltaY * unit
-  zoomAt(
-    zoom.value * Math.exp(-delta * 0.0012),
-    event.clientX,
-    event.clientY,
-    event.currentTarget as HTMLElement,
-  )
+  wheelScale *= Math.exp(-delta * 0.0012)
+  wheelX = event.clientX
+  wheelY = event.clientY
+  wheelSurface = event.currentTarget as HTMLElement
+  if (wheelFrame) return
+
+  wheelFrame = requestAnimationFrame(() => {
+    wheelFrame = 0
+    const scale = wheelScale
+    wheelScale = 1
+    if (wheelSurface) zoomAt(zoom.value * scale, wheelX, wheelY, wheelSurface)
+  })
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -244,78 +191,68 @@ function onKeydown(event: KeyboardEvent) {
   event.preventDefault()
 }
 
-watch(zoom, () => {
-  clearTimeout(zoomRenderTimer)
-  zoomRenderTimer = window.setTimeout(scheduleRender, 140)
-})
-
-onMounted(async () => {
-  if (!canvas.value) return
-
-  try {
-    loadTask = pdfjs.getDocument({ url: props.pdfUrl, isEvalSupported: false })
-    const pdf = await loadTask.promise
-    emit('pdfLoaded', await pdf.getData())
-    page = await pdf.getPage(1)
-    resizeObserver = new ResizeObserver(scheduleRender)
-    resizeObserver.observe(canvas.value)
-    await renderResume()
-  } catch (reason) {
-    if ((reason as { name?: string }).name !== 'RenderingCancelledException') {
-      console.error('The résumé could not be rendered.', reason)
-      emit('error')
-    }
-  }
-})
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect()
-  cancelAnimationFrame(resizeFrame)
-  clearTimeout(zoomRenderTimer)
-  renderTask?.cancel()
-  void loadTask?.destroy()
-})
+onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
 </script>
 
 <template>
-  <div class="resume-arrival" :class="{ 'motion-disabled': motionDisabled }">
-    <div
-      class="resume-float rotatable-float"
-      :style="{ scale: zoom, translate: `${panX}px ${panY}px` }"
-    >
-      <PaperModel class="resume-model" :flat :transform="objectTransform">
-        <template #front>
-          <canvas ref="canvas" class="resume-canvas" aria-label="Andy Anderson résumé"></canvas>
-        </template>
-        <template #back>
-          <div class="resume-back-content" aria-label="Andy Anderson logo">
-            <div class="back-brand">
-              <AaMark class="resume-mark" />
-              <span>andy / anderson</span>
-            </div>
-          </div>
-        </template>
-      </PaperModel>
-
+  <div
+    class="resume-arrival"
+    :class="{ 'motion-disabled': motionDisabled }"
+    :style="{ perspective: `${1_600 * zoom}px` }"
+  >
+    <div class="resume-float rotatable-float">
       <div
-        class="drag-surface"
-        :class="{ dragging, 'motion-disabled': motionDisabled }"
-        role="group"
-        :aria-label="
-          motionDisabled
-            ? 'Interactive résumé. Scroll or pinch to zoom.'
-            : 'Interactive résumé. Drag to rotate, scroll or pinch to zoom.'
-        "
-        tabindex="0"
-        @pointerdown="onPointerDown"
-        @pointermove="onPointerMove"
-        @pointerup="onPointerEnd"
-        @pointercancel="onPointerEnd($event, true)"
-        @pointerleave="motion.pointerLeave"
-        @wheel.prevent="onWheel"
-        @keydown="onKeydown"
-        @dblclick="resetZoom"
-      ></div>
+        class="resume-zoom"
+        :style="{
+          width: `${zoom * 100}%`,
+          height: `${zoom * 100}%`,
+          left: `${panX}px`,
+          top: `${panY}px`,
+        }"
+      >
+        <PaperModel class="resume-model" :flat :transform="objectTransform">
+          <template #front>
+            <div class="paper-fibers resume-fibers" aria-hidden="true"></div>
+            <img
+              class="resume-page"
+              :src="svgUrl"
+              alt="Andy Anderson résumé"
+              draggable="false"
+              @load="emit('ready')"
+              @error="emit('error')"
+            />
+          </template>
+          <template #back>
+            <div class="resume-back-content" aria-label="Andy Anderson logo">
+              <div class="paper-fibers resume-fibers" aria-hidden="true"></div>
+              <div class="back-brand">
+                <AaMark class="resume-mark" />
+                <span>andy / anderson</span>
+              </div>
+            </div>
+          </template>
+        </PaperModel>
+
+        <div
+          class="drag-surface"
+          :class="{ dragging, 'motion-disabled': motionDisabled }"
+          role="group"
+          :aria-label="
+            motionDisabled
+              ? 'Interactive résumé. Scroll or pinch to zoom.'
+              : 'Interactive résumé. Drag to rotate, scroll or pinch to zoom.'
+          "
+          tabindex="0"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerEnd"
+          @pointercancel="onPointerEnd($event, true)"
+          @pointerleave="motion.pointerLeave"
+          @wheel.prevent="onWheel"
+          @keydown="onKeydown"
+          @dblclick="resetZoom"
+        ></div>
+      </div>
     </div>
   </div>
 </template>
@@ -333,6 +270,7 @@ onBeforeUnmount(() => {
 }
 
 .resume-float,
+.resume-zoom,
 .resume-model {
   position: absolute;
   top: 0;
@@ -342,11 +280,12 @@ onBeforeUnmount(() => {
   transform-style: preserve-3d;
 }
 
-.resume-float {
-  transform-origin: 0 0;
+.resume-zoom {
+  will-change: width, height, left, top;
 }
 
 .resume-model {
+  container-type: inline-size;
   pointer-events: none;
 }
 
@@ -371,13 +310,19 @@ onBeforeUnmount(() => {
   outline-offset: 0.45rem;
 }
 
-.resume-canvas {
+.resume-page {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   border: 0;
-  background: #fff;
+  background: transparent;
   pointer-events: none;
+}
+
+.resume-fibers {
+  z-index: 0;
 }
 
 .resume-back-content {
@@ -388,20 +333,23 @@ onBeforeUnmount(() => {
 }
 
 .back-brand {
+  position: relative;
+  z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 1.2rem;
+  gap: 2.9cqw;
   color: #4c5053;
   font-family: var(--font-mono);
-  font-size: clamp(0.66rem, 1.2vw, 0.9rem);
+  font-size: 2.2cqw;
   font-weight: 600;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .resume-mark {
   --aa-color: #3f4346;
   --aa-accent: #aeb1b3;
-  font-size: clamp(6rem, 13vw, 9rem);
+  font-size: 22cqw;
 }
 
 @keyframes resume-arrive {

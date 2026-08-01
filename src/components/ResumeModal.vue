@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useMotionPreference } from '../composables/useMotionPreference'
+import { pdfToSvg } from '../lib/pdfToSvg'
 import ResumeCard from './ResumeCard.vue'
 
 const resumePdfUrl = 'https://local.andy.uno/Andy-Anderson-Resume.pdf'
@@ -21,6 +22,10 @@ let previousFocus: HTMLElement | null = null
 let printFrame: HTMLIFrameElement | null = null
 let printTimer = 0
 const cachedPdfUrl = ref('')
+const cachedSvgUrl = ref('')
+let cachedPdf: ArrayBuffer | null = null
+let pdfController: AbortController | null = null
+let pdfRequest: Promise<void> | null = null
 
 function closeResume() {
   emit('close')
@@ -32,12 +37,38 @@ function clearPrint() {
   printFrame = null
 }
 
-function cacheResumePdf(data: Uint8Array) {
-  clearPrint()
-  if (cachedPdfUrl.value) URL.revokeObjectURL(cachedPdfUrl.value)
-  const copy = new Uint8Array(data.byteLength)
-  copy.set(data)
-  cachedPdfUrl.value = URL.createObjectURL(new Blob([copy.buffer], { type: 'application/pdf' }))
+function loadResumePdf() {
+  if (cachedSvgUrl.value || pdfRequest) return
+
+  pdfController = new AbortController()
+  const signal = pdfController.signal
+  pdfRequest = Promise.resolve(cachedPdf)
+    .then((pdf) => {
+      if (pdf) return pdf
+      return fetch(resumePdfUrl, { signal }).then(async (response) => {
+        if (!response.ok) throw new Error(`PDF request failed with ${response.status}.`)
+        return response.arrayBuffer()
+      })
+    })
+    .then(async (pdf) => {
+      cachedPdf = pdf
+      if (!cachedPdfUrl.value) {
+        cachedPdfUrl.value = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }))
+      }
+      const svg = await pdfToSvg(pdf.slice(0), signal)
+      cachedSvgUrl.value = URL.createObjectURL(svg)
+    })
+    .catch((reason) => {
+      if ((reason as { name?: string }).name !== 'AbortError') {
+        console.warn('The résumé preview could not be prepared.', reason)
+        loading.value = false
+        failed.value = true
+      }
+    })
+    .finally(() => {
+      pdfController = null
+      pdfRequest = null
+    })
 }
 
 function downloadResume() {
@@ -104,12 +135,15 @@ function trapFocus(event: KeyboardEvent) {
   }
 }
 
+loadResumePdf()
+
 watch(
   () => props.open,
   async (isOpen) => {
     if (isOpen) {
       loading.value = true
       failed.value = false
+      loadResumePdf()
       previousFocus = document.activeElement as HTMLElement | null
       addEventListener('keydown', onKeydown)
       await nextTick()
@@ -125,8 +159,11 @@ watch(
 
 onBeforeUnmount(() => {
   removeEventListener('keydown', onKeydown)
+  pdfController?.abort()
   clearPrint()
   if (cachedPdfUrl.value) URL.revokeObjectURL(cachedPdfUrl.value)
+  if (cachedSvgUrl.value) URL.revokeObjectURL(cachedSvgUrl.value)
+  cachedPdf = null
 })
 </script>
 
@@ -145,10 +182,10 @@ onBeforeUnmount(() => {
         <div class="resume-backdrop" @click="closeResume"></div>
 
         <ResumeCard
-          :pdf-url="resumePdfUrl"
+          v-if="cachedSvgUrl"
+          :svg-url="cachedSvgUrl"
           @ready="loading = false"
           @error="((loading = false), (failed = true))"
-          @pdf-loaded="cacheResumePdf"
         />
 
         <div class="resume-actions">
@@ -187,14 +224,16 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-if="loading" class="resume-status" aria-live="polite">Preparing résumé…</div>
-        <div v-else-if="failed" class="resume-status error" aria-live="polite">
+        <div v-if="loading" class="resume-status floating-label" aria-live="polite">
+          Preparing résumé…
+        </div>
+        <div v-else-if="failed" class="resume-status floating-label error" aria-live="polite">
           <span>Couldn’t render the 3D preview.</span>
           <a :href="cachedPdfUrl || resumePdfUrl" download="Andy-Anderson-Resume.pdf">
             Download the PDF
           </a>
         </div>
-        <div v-else class="rotate-hint">
+        <div v-else class="rotate-hint floating-label">
           {{
             motionDisabled ? 'Scroll or pinch to zoom' : 'Drag to rotate · scroll or pinch to zoom'
           }}
@@ -273,16 +312,7 @@ onBeforeUnmount(() => {
   z-index: 4;
   bottom: clamp(1.25rem, 3vw, 2.5rem);
   left: 50%;
-  padding: 0.48rem 0.72rem;
-  border-radius: 999px;
-  background: rgba(6, 13, 21, 0.46);
-  color: rgba(255, 255, 255, 0.62);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   transform: translateX(-50%);
-  backdrop-filter: blur(8px);
   pointer-events: none;
 }
 
