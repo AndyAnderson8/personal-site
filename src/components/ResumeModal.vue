@@ -2,9 +2,10 @@
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useMotionPreference } from '../composables/useMotionPreference'
 import { pdfToSvg } from '../lib/pdfToSvg'
+import MotionToggle from './MotionToggle.vue'
 import ResumeCard from './ResumeCard.vue'
 
-const resumePdfUrl = 'https://local.andy.uno/Andy-Anderson-Resume.pdf'
+const resumePdfUrl = 'https://local.andyanderson.dev/Andy-Anderson-Resume.pdf'
 
 const props = defineProps<{
   open: boolean
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const resumeDialog = ref<HTMLElement | null>(null)
+const resumeMode = ref<'move' | 'rotate'>('move')
 const loading = ref(true)
 const failed = ref(false)
 let previousFocus: HTMLElement | null = null
@@ -138,9 +140,18 @@ function trapFocus(event: KeyboardEvent) {
 loadResumePdf()
 
 watch(
+  motionDisabled,
+  (disabled) => {
+    if (disabled) resumeMode.value = 'move'
+  },
+  { immediate: true },
+)
+
+watch(
   () => props.open,
   async (isOpen) => {
     if (isOpen) {
+      resumeMode.value = 'move'
       loading.value = true
       failed.value = false
       loadResumePdf()
@@ -183,12 +194,14 @@ onBeforeUnmount(() => {
 
         <ResumeCard
           v-if="cachedSvgUrl"
+          class="resume-fade-item"
           :svg-url="cachedSvgUrl"
+          :mode="resumeMode"
           @ready="loading = false"
           @error="((loading = false), (failed = true))"
         />
 
-        <div class="resume-actions">
+        <div class="resume-actions resume-fade-item">
           <button
             type="button"
             :disabled="!cachedPdfUrl"
@@ -224,19 +237,43 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-if="loading" class="resume-status floating-label" aria-live="polite">
+        <div
+          class="resume-mode-toggle resume-fade-item floating-label"
+          role="group"
+          aria-label="Résumé drag mode"
+        >
+          <button type="button" :aria-pressed="resumeMode === 'move'" @click="resumeMode = 'move'">
+            Move
+          </button>
+          <button
+            type="button"
+            :aria-pressed="resumeMode === 'rotate'"
+            :disabled="motionDisabled"
+            :title="motionDisabled ? 'Enable motion to rotate' : 'Rotate résumé'"
+            @click="resumeMode = 'rotate'"
+          >
+            Rotate
+          </button>
+        </div>
+
+        <MotionToggle class="resume-motion-toggle" />
+
+        <div
+          v-if="loading"
+          class="resume-status resume-fade-item floating-label"
+          aria-live="polite"
+        >
           Preparing résumé…
         </div>
-        <div v-else-if="failed" class="resume-status floating-label error" aria-live="polite">
+        <div
+          v-else-if="failed"
+          class="resume-status resume-fade-item floating-label error"
+          aria-live="polite"
+        >
           <span>Couldn’t render the 3D preview.</span>
           <a :href="cachedPdfUrl || resumePdfUrl" download="Andy-Anderson-Resume.pdf">
             Download the PDF
           </a>
-        </div>
-        <div v-else class="rotate-hint floating-label">
-          {{
-            motionDisabled ? 'Scroll or pinch to zoom' : 'Drag to rotate · scroll or pinch to zoom'
-          }}
         </div>
       </div>
     </Transition>
@@ -306,8 +343,49 @@ onBeforeUnmount(() => {
   cursor: wait;
 }
 
-.resume-status,
-.rotate-hint {
+.resume-mode-toggle {
+  position: absolute;
+  z-index: 4;
+  bottom: 1.5rem;
+  left: clamp(1.25rem, 4vw, 4.5rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.2rem;
+}
+
+.resume-mode-toggle button {
+  padding: 0.28rem 0.52rem;
+  border-radius: 999px;
+  color: inherit;
+  text-transform: uppercase;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.resume-mode-toggle button:hover,
+.resume-mode-toggle button[aria-pressed='true'] {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.resume-mode-toggle button[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.resume-mode-toggle button:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.resume-motion-toggle {
+  position: absolute;
+  z-index: 4;
+  right: clamp(1.25rem, 4vw, 4.5rem);
+  bottom: 1.5rem;
+}
+
+.resume-status {
   position: absolute;
   z-index: 4;
   bottom: clamp(1.25rem, 3vw, 2.5rem);
@@ -329,8 +407,6 @@ onBeforeUnmount(() => {
   text-underline-offset: 0.18rem;
 }
 
-.resume-enter-active,
-.resume-leave-active,
 .resume-enter-active .resume-backdrop,
 .resume-leave-active .resume-backdrop {
   transition:
@@ -338,10 +414,18 @@ onBeforeUnmount(() => {
     backdrop-filter 420ms ease;
 }
 
-.resume-enter-from,
-.resume-leave-to,
+.resume-enter-active .resume-fade-item,
+.resume-leave-active .resume-fade-item {
+  transition: opacity 360ms ease;
+}
+
 .resume-enter-from .resume-backdrop,
 .resume-leave-to .resume-backdrop {
+  opacity: 0;
+}
+
+.resume-enter-from .resume-fade-item,
+.resume-leave-to .resume-fade-item {
   opacity: 0;
 }
 
@@ -355,10 +439,6 @@ onBeforeUnmount(() => {
   .resume-actions a {
     width: 2.45rem;
     height: 2.45rem;
-  }
-
-  .rotate-hint {
-    bottom: 1rem;
   }
 }
 </style>

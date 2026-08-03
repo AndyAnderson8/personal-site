@@ -2,6 +2,7 @@
 import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AaMark from './components/AaMark.vue'
 import BusinessCard from './components/BusinessCard.vue'
+import MotionToggle from './components/MotionToggle.vue'
 import { useMotionPreference } from './composables/useMotionPreference'
 
 const resumePath = '/resume'
@@ -9,7 +10,7 @@ const isResumePath = () => location.pathname.replace(/\/$/, '') === resumePath
 if (location.hash === '#resume') history.replaceState(null, '', `${resumePath}${location.search}`)
 const resumeOpen = ref(isResumePath())
 let ownsResumeHistory = false
-const { motionDisabled, toggleMotion } = useMotionPreference()
+const { motionDisabled } = useMotionPreference()
 const AmbientScene = defineAsyncComponent(() => import('./components/AmbientScene.vue'))
 const ResumeModal = defineAsyncComponent(() => import('./components/ResumeModal.vue'))
 
@@ -85,14 +86,7 @@ onBeforeUnmount(() => {
   </div>
 
   <Teleport to="body">
-    <button
-      class="motion-toggle floating-label"
-      type="button"
-      :aria-pressed="motionDisabled"
-      @click="toggleMotion"
-    >
-      {{ motionDisabled ? 'Enable motion' : 'Disable motion' }}
-    </button>
+    <MotionToggle v-if="!resumeOpen" class="motion-toggle" />
   </Teleport>
 </template>
 
@@ -184,19 +178,23 @@ onBeforeUnmount(() => {
 
 .site-footer {
   position: fixed;
-  inset: auto 0 0;
+  inset: auto 0 1.5rem;
   z-index: 10;
+  height: 1.7rem;
   color: rgba(255, 255, 255, 0.48);
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .site-footer-inner {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 1.5rem var(--content-gutter);
+  height: 100%;
+  padding: 0 var(--content-gutter);
 }
 
 .motion-toggle {
@@ -204,11 +202,6 @@ onBeforeUnmount(() => {
   z-index: 110;
   right: clamp(1.25rem, 4vw, 4.5rem);
   bottom: 1.5rem;
-}
-
-.motion-toggle:hover,
-.motion-toggle[aria-pressed='true'] {
-  color: rgba(255, 255, 255, 0.82);
 }
 
 @keyframes breathe {

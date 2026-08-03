@@ -9,13 +9,19 @@ defineSlots<{
   back(props: { flip: () => void }): unknown
 }>()
 
+const FULL_TURN = 360
+const HALF_TURN = 180
+const FLIP_COOLDOWN_MS = 400
+
+type FlipDirection = -1 | 1
+
 const { motionDisabled } = useMotionPreference()
 const motion = useRotatableMotion({ initialX: -7, initialY: -12 })
 const { rotationX, rotationY, targetRotationY, dragging, moved } = motion
 const dragHintDismissed = ref(false)
 const isBackFacing = (angle: number) => {
-  const normalized = ((angle % 360) + 360) % 360
-  return normalized > 90 && normalized < 270
+  const normalized = ((angle % FULL_TURN) + FULL_TURN) % FULL_TURN
+  return normalized > HALF_TURN / 2 && normalized < FULL_TURN - HALF_TURN / 2
 }
 const backActive = computed(() => isBackFacing(rotationY.value))
 const targetFlipped = computed(() => isBackFacing(targetRotationY.value))
@@ -25,6 +31,8 @@ let projectedHover: HTMLElement | null = null
 let pressedControl: HTMLElement | null = null
 let permittedControl: HTMLElement | null = null
 let forwardingControlClick = false
+let nextButtonFlipDirection: FlipDirection = 1
+let flipLockedUntil = 0
 
 function setProjectedHover(control: HTMLElement | null) {
   if (projectedHover === control) return
@@ -85,12 +93,30 @@ function onPointerUp(event: PointerEvent) {
   if (wasMoved) scheduleHintReturn()
 }
 
-function flip() {
+function nextFaceAngle(currentY: number, backFacing: boolean, direction: FlipDirection) {
+  const faceOffset = backFacing ? 0 : HALF_TURN
+  const turnCount =
+    direction > 0
+      ? Math.floor((currentY - faceOffset) / FULL_TURN + 1)
+      : Math.ceil((currentY - faceOffset) / FULL_TURN - 1)
+  return faceOffset + turnCount * FULL_TURN
+}
+
+function flipInDirection(direction: FlipDirection) {
+  const now = performance.now()
+  if (now < flipLockedUntil) return false
+  flipLockedUntil = now + FLIP_COOLDOWN_MS
   clearTimeout(hintTimer)
-  const turns = Math.round(targetRotationY.value / 360) * 360
-  motion.setTarget(motionDisabled.value ? 0 : -4, targetFlipped.value ? turns : turns + 180)
+  const nextY = nextFaceAngle(targetRotationY.value, targetFlipped.value, direction)
+  motion.setTarget(motionDisabled.value ? 0 : -4, nextY)
   dragHintDismissed.value = true
   scheduleHintReturn()
+  return true
+}
+
+function flipFromButton() {
+  const direction = nextButtonFlipDirection
+  if (flipInDirection(direction)) nextButtonFlipDirection = direction === 1 ? -1 : 1
 }
 
 function scheduleHintReturn() {
@@ -101,7 +127,9 @@ function scheduleHintReturn() {
 }
 
 function onDoubleClick(event: MouseEvent) {
-  if (!(event.target as HTMLElement).closest('a, button')) flip()
+  if ((event.target as HTMLElement).closest('a, button')) return
+  const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  flipInDirection(event.clientX < bounds.left + bounds.width / 2 ? -1 : 1)
 }
 
 function forwardControlClick(event: MouseEvent) {
@@ -165,8 +193,8 @@ onBeforeUnmount(() => {
         :flat="motionDisabled"
         :transform="motionDisabled ? 'none' : `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`"
       >
-        <template #front><slot name="front" :flip /></template>
-        <template #back><slot name="back" :flip /></template>
+        <template #front><slot name="front" :flip="flipFromButton" /></template>
+        <template #back><slot name="back" :flip="flipFromButton" /></template>
       </PaperModel>
     </div>
 
@@ -279,7 +307,13 @@ onBeforeUnmount(() => {
   }
 
   .drag-hint {
-    bottom: -3.4rem;
+    display: none;
+  }
+}
+
+@media (max-height: 720px) {
+  .drag-hint {
+    display: none;
   }
 }
 </style>
