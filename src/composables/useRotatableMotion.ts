@@ -2,19 +2,19 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import { useMotionPreference } from './useMotionPreference'
 
 const MOTION = {
-  dragX: 0.258,
-  dragY: 0.186,
-  releaseX: 0.2005,
-  releaseY: 0.129,
-  hoverX: 4.6,
+  dragX: 0.5,
+  dragY: 0.4,
+  releaseX: 0.15,
+  releaseY: 0.1,
+  hoverX: 4.5,
   hoverY: 3.15,
-  maxPitch: 68,
+  maxPitch: 60,
   frictionX: 0.97,
-  frictionY: 0.96,
-  response: 0.11,
-  dragResponse: 0.28,
-  hoverResponse: 0.09,
-  cutoff: 0.012,
+  frictionY: 0.5,
+  response: 0.1,
+  dragResponse: 0.3,
+  hoverResponse: 0.1,
+  cutoff: 0.01,
   settle: 0.001,
 }
 

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useMotionPreference } from '../composables/useMotionPreference'
 import { useRotatableMotion } from '../composables/useRotatableMotion'
 import AaMark from './AaMark.vue'
 import PaperModel from './PaperModel.vue'
 
-defineProps<{
+const props = defineProps<{
   svgUrl: string
+  mode: 'move' | 'rotate'
 }>()
 
 const emit = defineEmits<{
@@ -16,14 +17,16 @@ const emit = defineEmits<{
 
 const { motionDisabled } = useMotionPreference()
 const motion = useRotatableMotion()
-const { rotationX, rotationY, dragging } = motion
+const { rotationX, rotationY, dragging: rotating } = motion
+const moving = ref(false)
+const dragging = computed(() => rotating.value || moving.value)
 const zoom = ref(1)
 const panX = ref(0)
 const panY = ref(0)
 const pinching = ref(false)
 const flat = computed(() => {
   const frontY = ((((rotationY.value + 180) % 360) + 360) % 360) - 180
-  return !dragging.value && Math.abs(rotationX.value) < 0.02 && Math.abs(frontY) < 0.02
+  return !rotating.value && Math.abs(rotationX.value) < 0.02 && Math.abs(frontY) < 0.02
 })
 const objectTransform = computed(() =>
   flat.value ? 'none' : `rotateX(${rotationX.value}deg) rotateY(${rotationY.value}deg)`,
@@ -36,6 +39,9 @@ let pinchCenterX = 0
 let pinchCenterY = 0
 let pinchAnchorX = 0
 let pinchAnchorY = 0
+let movePointerId = -1
+let moveX = 0
+let moveY = 0
 const pointers = new Map<number, { x: number; y: number }>()
 let wheelFrame = 0
 let wheelScale = 1
@@ -90,10 +96,19 @@ function resetZoom() {
   panX.value = panY.value = 0
 }
 
+function startMove(event: PointerEvent) {
+  movePointerId = event.pointerId
+  moveX = event.clientX
+  moveY = event.clientY
+  moving.value = true
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+}
+
 function onPointerDown(event: PointerEvent) {
   pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
   if (pointers.size === 1 && !pinching.value) {
-    motion.pointerDown(event)
+    if (props.mode === 'move') startMove(event)
+    else motion.pointerDown(event)
   } else if (pointers.size === 2) {
     ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
     pinching.value = true
@@ -107,13 +122,15 @@ function onPointerDown(event: PointerEvent) {
     pinchCenterY = center.y
     pinchAnchorX = (center.x - bounds.left) / zoom.value
     pinchAnchorY = (center.y - bounds.top) / zoom.value
+    movePointerId = -1
+    moving.value = false
     motion.cancelDrag()
   }
 }
 
 function onPointerMove(event: PointerEvent) {
   if (!pointers.has(event.pointerId)) {
-    motion.pointerMove(event)
+    if (props.mode === 'rotate') motion.pointerMove(event)
     return
   }
 
@@ -138,6 +155,16 @@ function onPointerMove(event: PointerEvent) {
     return
   }
 
+  if (props.mode === 'move') {
+    if (event.pointerId === movePointerId) {
+      panX.value += event.clientX - moveX
+      panY.value += event.clientY - moveY
+      moveX = event.clientX
+      moveY = event.clientY
+    }
+    return
+  }
+
   motion.pointerMove(event)
 }
 
@@ -145,6 +172,12 @@ function onPointerEnd(event: PointerEvent, cancelled = false) {
   pointers.delete(event.pointerId)
   if (pinching.value) {
     if (!pointers.size) pinching.value = false
+    return
+  }
+
+  if (event.pointerId === movePointerId) {
+    movePointerId = -1
+    moving.value = false
     return
   }
 
@@ -191,6 +224,20 @@ function onKeydown(event: KeyboardEvent) {
   event.preventDefault()
 }
 
+function onPointerLeave() {
+  if (props.mode === 'rotate') motion.pointerLeave()
+}
+
+watch(
+  () => props.mode,
+  (mode) => {
+    movePointerId = -1
+    moving.value = false
+    motion.freeze()
+    if (mode === 'move') motion.setTarget(0, 0)
+  },
+)
+
 onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
 </script>
 
@@ -200,7 +247,7 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
     :class="{ 'motion-disabled': motionDisabled }"
     :style="{ perspective: `${1_600 * zoom}px` }"
   >
-    <div class="resume-float rotatable-float">
+    <div class="resume-float">
       <div
         class="resume-zoom"
         :style="{
@@ -238,8 +285,8 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
           :class="{ dragging, 'motion-disabled': motionDisabled }"
           role="group"
           :aria-label="
-            motionDisabled
-              ? 'Interactive résumé. Scroll or pinch to zoom.'
+            props.mode === 'move'
+              ? 'Interactive résumé. Drag to move, scroll or pinch to zoom.'
               : 'Interactive résumé. Drag to rotate, scroll or pinch to zoom.'
           "
           tabindex="0"
@@ -247,7 +294,7 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
           @pointermove="onPointerMove"
           @pointerup="onPointerEnd"
           @pointercancel="onPointerEnd($event, true)"
-          @pointerleave="motion.pointerLeave"
+          @pointerleave="onPointerLeave"
           @wheel.prevent="onWheel"
           @keydown="onKeydown"
           @dblclick="resetZoom"

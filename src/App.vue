@@ -184,19 +184,23 @@ onBeforeUnmount(() => {
 
 .site-footer {
   position: fixed;
-  inset: auto 0 0;
+  inset: auto 0 1.5rem;
   z-index: 10;
+  height: 1.7rem;
   color: rgba(255, 255, 255, 0.48);
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .site-footer-inner {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 1.5rem var(--content-gutter);
+  height: 100%;
+  padding: 0 var(--content-gutter);
 }
 
 .motion-toggle {

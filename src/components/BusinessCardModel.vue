@@ -279,7 +279,13 @@ onBeforeUnmount(() => {
   }
 
   .drag-hint {
-    bottom: -3.4rem;
+    display: none;
+  }
+}
+
+@media (max-height: 720px) {
+  .drag-hint {
+    display: none;
   }
 }
 </style>
