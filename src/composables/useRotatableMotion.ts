@@ -2,15 +2,15 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import { useMotionPreference } from './useMotionPreference'
 
 const MOTION = {
-  dragX: 0.5,
-  dragY: 0.4,
-  releaseX: 0.15,
-  releaseY: 0.1,
-  hoverX: 4.5,
-  hoverY: 3.15,
+  yawDrag: 0.5,
+  pitchDrag: 0.4,
+  yawRelease: 0.15,
+  pitchRelease: 0.1,
+  yawHover: 4.5,
+  pitchHover: 3.15,
   maxPitch: 60,
-  frictionX: 0.97,
-  frictionY: 0.5,
+  yawFriction: 0.97,
+  pitchFriction: 0.5,
   response: 0.1,
   dragResponse: 0.3,
   hoverResponse: 0.1,
@@ -45,8 +45,8 @@ export function useRotatableMotion(options: MotionOptions = {}) {
   let hoverY = 0
   let hoverTargetX = 0
   let hoverTargetY = 0
-  let velocityX = 0
-  let velocityY = 0
+  let pitchVelocity = 0
+  let yawVelocity = 0
   let pointerId = -1
   let startX = 0
   let startY = 0
@@ -60,7 +60,7 @@ export function useRotatableMotion(options: MotionOptions = {}) {
     pointerId = event.pointerId
     startX = previousX = event.clientX
     startY = previousY = event.clientY
-    velocityX = velocityY = 0
+    pitchVelocity = yawVelocity = 0
     dragging.value = true
     moved.value = false
     clearHover()
@@ -73,8 +73,8 @@ export function useRotatableMotion(options: MotionOptions = {}) {
     if (pointerId === -1) {
       if (event.pointerType === 'mouse') {
         const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
-        hoverTargetX = (((event.clientY - bounds.top) / bounds.height) * 2 - 1) * -MOTION.hoverY
-        hoverTargetY = (((event.clientX - bounds.left) / bounds.width) * 2 - 1) * MOTION.hoverX
+        hoverTargetX = (((event.clientY - bounds.top) / bounds.height) * 2 - 1) * -MOTION.pitchHover
+        hoverTargetY = (((event.clientX - bounds.left) / bounds.width) * 2 - 1) * MOTION.yawHover
         startAnimation()
       }
       return
@@ -83,11 +83,11 @@ export function useRotatableMotion(options: MotionOptions = {}) {
 
     const deltaX = event.clientX - previousX
     const deltaY = event.clientY - previousY
-    targetY += deltaX * MOTION.dragX
-    targetX = clamp(targetX - deltaY * MOTION.dragY, -MOTION.maxPitch, MOTION.maxPitch)
+    targetY += deltaX * MOTION.yawDrag
+    targetX = clamp(targetX - deltaY * MOTION.pitchDrag, -MOTION.maxPitch, MOTION.maxPitch)
     targetRotationY.value = targetY
-    velocityY = deltaX * MOTION.releaseX
-    velocityX = -deltaY * MOTION.releaseY
+    yawVelocity = deltaX * MOTION.yawRelease
+    pitchVelocity = -deltaY * MOTION.pitchRelease
     previousX = event.clientX
     previousY = event.clientY
     moved.value ||= Math.abs(event.clientX - startX) + Math.abs(event.clientY - startY) > 8
@@ -99,7 +99,7 @@ export function useRotatableMotion(options: MotionOptions = {}) {
     if (event.pointerId !== pointerId) return
     pointerId = -1
     dragging.value = false
-    if (cancelMomentum) velocityX = velocityY = 0
+    if (cancelMomentum) pitchVelocity = yawVelocity = 0
     startAnimation()
   }
 
@@ -111,7 +111,7 @@ export function useRotatableMotion(options: MotionOptions = {}) {
     pointerId = -1
     dragging.value = false
     moved.value = false
-    velocityX = velocityY = 0
+    pitchVelocity = yawVelocity = 0
     clearHover()
   }
 
@@ -127,7 +127,7 @@ export function useRotatableMotion(options: MotionOptions = {}) {
   function setTarget(nextX: number, nextY: number) {
     targetX = clamp(nextX, -MOTION.maxPitch, MOTION.maxPitch)
     targetY = targetRotationY.value = nextY
-    velocityX = velocityY = 0
+    pitchVelocity = yawVelocity = 0
     if (motionDisabled.value) {
       currentX = rotationX.value = targetX
       currentY = rotationY.value = targetY
@@ -144,7 +144,7 @@ export function useRotatableMotion(options: MotionOptions = {}) {
     lastFrame = 0
     pointerId = -1
     dragging.value = false
-    velocityX = velocityY = 0
+    pitchVelocity = yawVelocity = 0
     hoverX = hoverY = hoverTargetX = hoverTargetY = 0
     targetX = currentX = rotationX.value
     targetY = currentY = targetRotationY.value = rotationY.value
@@ -162,13 +162,13 @@ export function useRotatableMotion(options: MotionOptions = {}) {
     lastFrame = timestamp
 
     if (!dragging.value) {
-      targetY += velocityY * frameScale
-      targetX = clamp(targetX + velocityX * frameScale, -MOTION.maxPitch, MOTION.maxPitch)
+      targetY += yawVelocity * frameScale
+      targetX = clamp(targetX + pitchVelocity * frameScale, -MOTION.maxPitch, MOTION.maxPitch)
       targetRotationY.value = targetY
-      velocityY *= Math.pow(MOTION.frictionX, frameScale)
-      velocityX *= Math.pow(MOTION.frictionY, frameScale)
-      if (Math.abs(velocityY) < MOTION.cutoff) velocityY = 0
-      if (Math.abs(velocityX) < MOTION.cutoff) velocityX = 0
+      yawVelocity *= Math.pow(MOTION.yawFriction, frameScale)
+      pitchVelocity *= Math.pow(MOTION.pitchFriction, frameScale)
+      if (Math.abs(yawVelocity) < MOTION.cutoff) yawVelocity = 0
+      if (Math.abs(pitchVelocity) < MOTION.cutoff) pitchVelocity = 0
     }
 
     const response =
@@ -187,8 +187,8 @@ export function useRotatableMotion(options: MotionOptions = {}) {
 
     const moving =
       dragging.value ||
-      velocityX !== 0 ||
-      velocityY !== 0 ||
+      pitchVelocity !== 0 ||
+      yawVelocity !== 0 ||
       currentX !== targetX ||
       currentY !== targetY ||
       hoverX !== hoverTargetX ||
@@ -213,7 +213,7 @@ export function useRotatableMotion(options: MotionOptions = {}) {
       pointerId = -1
       dragging.value = false
       moved.value = false
-      velocityX = velocityY = 0
+      pitchVelocity = yawVelocity = 0
       hoverX = hoverY = hoverTargetX = hoverTargetY = 0
       targetX = currentX = rotationX.value = disabledX
       targetY = currentY = rotationY.value = targetRotationY.value = disabledY

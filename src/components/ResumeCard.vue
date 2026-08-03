@@ -234,7 +234,10 @@ watch(
     movePointerId = -1
     moving.value = false
     motion.freeze()
-    if (mode === 'move') motion.setTarget(0, 0)
+    if (mode === 'move') {
+      const nearestFront = Math.round(rotationY.value / 360) * 360
+      motion.setTarget(0, nearestFront)
+    }
   },
 )
 
@@ -247,6 +250,11 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
     :class="{ 'motion-disabled': motionDisabled }"
     :style="{ perspective: `${1_600 * zoom}px` }"
   >
+    <span id="resume-keyboard-help" class="keyboard-instructions">
+      Keyboard controls: press plus or equals to zoom in, minus to zoom out, and zero to reset zoom
+      and position.
+    </span>
+
     <div class="resume-float">
       <div
         class="resume-zoom"
@@ -257,7 +265,20 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
           top: `${panY}px`,
         }"
       >
-        <PaperModel class="resume-model" :flat :transform="objectTransform">
+        <PaperModel
+          class="resume-model"
+          :flat
+          :transform="objectTransform"
+          role="group"
+          :aria-label="
+            props.mode === 'move'
+              ? 'Interactive résumé. Drag to move, scroll or pinch to zoom.'
+              : 'Interactive résumé. Drag to rotate, scroll or pinch to zoom.'
+          "
+          aria-describedby="resume-keyboard-help"
+          tabindex="0"
+          @keydown="onKeydown"
+        >
           <template #front>
             <div class="paper-fibers resume-fibers" aria-hidden="true"></div>
             <img
@@ -283,20 +304,12 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
         <div
           class="drag-surface"
           :class="{ dragging, 'motion-disabled': motionDisabled }"
-          role="group"
-          :aria-label="
-            props.mode === 'move'
-              ? 'Interactive résumé. Drag to move, scroll or pinch to zoom.'
-              : 'Interactive résumé. Drag to rotate, scroll or pinch to zoom.'
-          "
-          tabindex="0"
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
           @pointerup="onPointerEnd"
           @pointercancel="onPointerEnd($event, true)"
           @pointerleave="onPointerLeave"
           @wheel.prevent="onWheel"
-          @keydown="onKeydown"
           @dblclick="resetZoom"
         ></div>
       </div>
@@ -314,6 +327,17 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
   aspect-ratio: 8.5 / 11;
   perspective: 1600px;
   animation: resume-arrive 820ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.keyboard-instructions {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .resume-float,
@@ -352,7 +376,7 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
   cursor: default;
 }
 
-.drag-surface:focus-visible {
+.resume-model:focus-visible {
   outline: 2px solid #e8b86d;
   outline-offset: 0.45rem;
 }

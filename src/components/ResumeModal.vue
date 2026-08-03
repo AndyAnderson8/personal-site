@@ -2,6 +2,7 @@
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useMotionPreference } from '../composables/useMotionPreference'
 import { pdfToSvg } from '../lib/pdfToSvg'
+import MotionToggle from './MotionToggle.vue'
 import ResumeCard from './ResumeCard.vue'
 
 const resumePdfUrl = 'https://local.andyanderson.dev/Andy-Anderson-Resume.pdf'
@@ -193,13 +194,14 @@ onBeforeUnmount(() => {
 
         <ResumeCard
           v-if="cachedSvgUrl"
+          class="resume-fade-item"
           :svg-url="cachedSvgUrl"
           :mode="resumeMode"
           @ready="loading = false"
           @error="((loading = false), (failed = true))"
         />
 
-        <div class="resume-actions">
+        <div class="resume-actions resume-fade-item">
           <button
             type="button"
             :disabled="!cachedPdfUrl"
@@ -235,7 +237,11 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div class="resume-mode-toggle floating-label" role="group" aria-label="Résumé drag mode">
+        <div
+          class="resume-mode-toggle resume-fade-item floating-label"
+          role="group"
+          aria-label="Résumé drag mode"
+        >
           <button type="button" :aria-pressed="resumeMode === 'move'" @click="resumeMode = 'move'">
             Move
           </button>
@@ -250,10 +256,20 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-if="loading" class="resume-status floating-label" aria-live="polite">
+        <MotionToggle class="resume-motion-toggle" />
+
+        <div
+          v-if="loading"
+          class="resume-status resume-fade-item floating-label"
+          aria-live="polite"
+        >
           Preparing résumé…
         </div>
-        <div v-else-if="failed" class="resume-status floating-label error" aria-live="polite">
+        <div
+          v-else-if="failed"
+          class="resume-status resume-fade-item floating-label error"
+          aria-live="polite"
+        >
           <span>Couldn’t render the 3D preview.</span>
           <a :href="cachedPdfUrl || resumePdfUrl" download="Andy-Anderson-Resume.pdf">
             Download the PDF
@@ -362,6 +378,13 @@ onBeforeUnmount(() => {
   cursor: not-allowed;
 }
 
+.resume-motion-toggle {
+  position: absolute;
+  z-index: 4;
+  right: clamp(1.25rem, 4vw, 4.5rem);
+  bottom: 1.5rem;
+}
+
 .resume-status {
   position: absolute;
   z-index: 4;
@@ -384,8 +407,6 @@ onBeforeUnmount(() => {
   text-underline-offset: 0.18rem;
 }
 
-.resume-enter-active,
-.resume-leave-active,
 .resume-enter-active .resume-backdrop,
 .resume-leave-active .resume-backdrop {
   transition:
@@ -393,10 +414,18 @@ onBeforeUnmount(() => {
     backdrop-filter 420ms ease;
 }
 
-.resume-enter-from,
-.resume-leave-to,
+.resume-enter-active .resume-fade-item,
+.resume-leave-active .resume-fade-item {
+  transition: opacity 360ms ease;
+}
+
 .resume-enter-from .resume-backdrop,
 .resume-leave-to .resume-backdrop {
+  opacity: 0;
+}
+
+.resume-enter-from .resume-fade-item,
+.resume-leave-to .resume-fade-item {
   opacity: 0;
 }
 

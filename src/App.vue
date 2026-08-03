@@ -2,6 +2,7 @@
 import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AaMark from './components/AaMark.vue'
 import BusinessCard from './components/BusinessCard.vue'
+import MotionToggle from './components/MotionToggle.vue'
 import { useMotionPreference } from './composables/useMotionPreference'
 
 const resumePath = '/resume'
@@ -9,7 +10,7 @@ const isResumePath = () => location.pathname.replace(/\/$/, '') === resumePath
 if (location.hash === '#resume') history.replaceState(null, '', `${resumePath}${location.search}`)
 const resumeOpen = ref(isResumePath())
 let ownsResumeHistory = false
-const { motionDisabled, toggleMotion } = useMotionPreference()
+const { motionDisabled } = useMotionPreference()
 const AmbientScene = defineAsyncComponent(() => import('./components/AmbientScene.vue'))
 const ResumeModal = defineAsyncComponent(() => import('./components/ResumeModal.vue'))
 
@@ -85,14 +86,7 @@ onBeforeUnmount(() => {
   </div>
 
   <Teleport to="body">
-    <button
-      class="motion-toggle floating-label"
-      type="button"
-      :aria-pressed="motionDisabled"
-      @click="toggleMotion"
-    >
-      {{ motionDisabled ? 'Enable motion' : 'Disable motion' }}
-    </button>
+    <MotionToggle v-if="!resumeOpen" class="motion-toggle" />
   </Teleport>
 </template>
 
@@ -208,11 +202,6 @@ onBeforeUnmount(() => {
   z-index: 110;
   right: clamp(1.25rem, 4vw, 4.5rem);
   bottom: 1.5rem;
-}
-
-.motion-toggle:hover,
-.motion-toggle[aria-pressed='true'] {
-  color: rgba(255, 255, 255, 0.82);
 }
 
 @keyframes breathe {
